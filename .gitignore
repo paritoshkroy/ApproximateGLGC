@@ -1,0 +1,28 @@
+*
+!/**/
+!*.*
+
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+*.html
+*.pdf
+*.log
+*.qmd
+*.Rmd
+*.md
+OutRData/*
+Summary/*
+Prediction/*
+*.png
+*.jpg
+*.jpeg
+
+# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
+.httr-oauth
+
+# knitr and R markdown default cache directories
+*_cache/
+/cache/
