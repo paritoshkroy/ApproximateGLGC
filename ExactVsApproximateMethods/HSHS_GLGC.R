@@ -46,10 +46,8 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01)
-lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)
-uLimit
+lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
@@ -74,7 +72,7 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 10,
+                          max_treedepth = 12,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time

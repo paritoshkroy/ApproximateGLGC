@@ -30,12 +30,8 @@ obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
 
 # Constants
-lLimit <- quantile(obsDistVec, prob = 0.01)
-lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)
-uLimit
-
-rm(obsDistVec)
+lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
 rm(obsDistMat)
 
 ################################################################################
@@ -91,7 +87,7 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 10,
+                          max_treedepth = 12,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time

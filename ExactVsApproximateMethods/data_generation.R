@@ -9,11 +9,7 @@ library(sf)
 library(coda)
 library(nleqslv)
 
-sDomain <- rbind(c(-1, -1),c(1, 1))
-sDiameter <- rdist(sDomain)[1,2]
-sfcDomain <- st_sfc(st_polygon(list(rbind(c(-1,-1),c(1,-1),c(1,1),c(-1,1),c(-1,-1)))))
-sGrid <- st_make_grid(x = sfcDomain, n = c(100,100), what = "centers", square = TRUE)
-coords <- unname(st_coordinates(sGrid)[,c("X","Y")])
+coords <- unname(as.matrix(expand.grid(x = seq(-0.99, 0.99, length.out = 100), y = seq(-0.99, 0.99, length.out = 100))))
 nsite <- nrow(coords)
 beta <- c(5,-1,1)
 sigma1 <- 1
@@ -45,7 +41,7 @@ set.seed(NULL)
 #boxplot(y[idSampled])
 
 obj_all <- ls()
-obj_keep <- c("idSampled", "y", "z1", "z2", "X", "beta", "sigma1", "sigma2", "lscale1", "lscale2", "tau", "coords", "sDomain", "gamma", "nsize")
+obj_keep <- c("idSampled", "y", "z1", "z2", "X", "beta", "sigma1", "sigma2", "lscale1", "lscale2", "tau", "coords", "gamma", "nsize")
 obj_drop <- obj_all[!obj_all %in% c(obj_prev, obj_keep)]
 rm(list = obj_drop)
 gc()

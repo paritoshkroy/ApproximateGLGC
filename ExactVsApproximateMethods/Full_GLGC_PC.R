@@ -30,20 +30,16 @@ obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
 
 # Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01)
-lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)
-uLimit
-
-rm(obsDistVec)
+lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
 rm(obsDistMat)
 
-lambda_sigma1 <- -log(0.05)/1; lambda_sigma1
-lambda_sigma2 <- -log(0.05)/1; lambda_sigma2
-lambda_tau <- -log(0.05)/1; lambda_tau
+lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
+lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+lambda_tau <- -log(0.01)/1; lambda_tau
 pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
-lambda_ell1 <- as.numeric(-log(0.05)*lLimit); lambda_ell1
-lambda_ell2 <- as.numeric(-log(0.05)*lLimit); lambda_ell2
+lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
+lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
 pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
 
 P <- 2
@@ -63,7 +59,7 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 10,
+                          max_treedepth = 12,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
