@@ -3,7 +3,7 @@
 #SBATCH --ntasks=16              # number of processes
 #SBATCH --mem-per-cpu=16000M      # memory; default unit is megabytes
 #SBATCH --time=48:00:00         # time (HH:MM:SS)
-#SBATCH --output=/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/%x-%j.out
+#SBATCH --output=/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/ExactVsApproximateMethods/%x-%j.out
 
 # Modules
 module load gcc/11.3.0
