@@ -40,19 +40,15 @@ prdCoords <- selected.sat.temps %>% filter(is.na(MaskTemp)) %>% select(scaledLon
 obsX <- cbind(1,obsCoords); str(obsX)
 prdX <- cbind(1,prdCoords); str(prdX)
 ################################################################################
-# Preparing for Hilbert Space Approximate GP
+## NNGP preparation
 ################################################################################
-m1 <- 22; m2 <- 22; mstar <- m1*m2
-xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
-Lstar <- apply(xyRanges, 2, max); Lstar
-c <- c(1.5,1.5)
-L <- c*Lstar
-str(L)
-S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
-str(S)
-lambda <- ((pi*S)/(2*L))^2
-str(lambda)
-head(lambda)
+source(paste0(fpath,"Rutilities/NNMatrix.R"))
+nNeighbors <- 20
+neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
+str(neiMatInfo)
+obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
+obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
+obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
 #############################################################################
 # Prior elicitation
 #############################################################################
@@ -75,22 +71,23 @@ curve(dinvgamma(x, shape = ab[1], scale = ab[2]), from = 0, to = uLimit)
 P <- 2
 mu_beta <- c(mean(obsY),rep(0,P))
 V_beta <- diag(c(2.5*var(obsY),rep(1,P)))
-input <- list(N = nsize, M = mstar, P = 2, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_beta = mu_beta, V_beta = V_beta, a = ab[1], b = ab[2])
+input <- list(N = nsize, K = nNeighbors, P = 2, y = obsY, X = obsX, coords = obsCoords, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_beta = mu_beta, V_beta = V_beta, a = ab[1], b = ab[2])
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/logHSGP.stan")
+stan_file <- paste0(fpath,"StanFiles/NNGP.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 10,
+                          iter_sampling = 10,
                           adapt_delta = 0.99,
                           max_treedepth = 10,
-                          step_size = 0.25)
+                          step_size = 0.25,
+                          init = 1)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
@@ -130,7 +127,7 @@ z_summary <- tibble(post.mean = apply(post_z, 2, mean),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
 
-save(elapsed_time, fixed_summary, draws_df, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/logHSGP_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSGP_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -172,10 +169,9 @@ l <- 1
 obsXbeta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_beta[l,])); str(obsXbeta)
 prdXbeta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_beta[l,])); str(prdXbeta)
 
-post_sigma <- as_tibble(draws_df) %>% .$tau; str(post_sigma)
 post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
 str(post_zpred)
-ypred_draws <- t(sapply(1:size_post_samples, function(l) exp(prdXbeta[l,] + post_zpred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l]))))
+ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXbeta[l,] + post_zpred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
 str(ypred_draws)
 
 pred_summary <- tibble(
@@ -206,5 +202,5 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,VS0.25,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/logHSGP_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSGP_Temps.RData"))
 
