@@ -22,7 +22,7 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args)==0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
-node <- as.numeric(args[1])-300 ### specify correct node here
+node <- as.numeric(args[1])-100 ### specify correct node here
 cat("The seed used to be ", node, "\n")
 
 ##########################################################################

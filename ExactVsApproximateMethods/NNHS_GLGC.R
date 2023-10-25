@@ -131,7 +131,7 @@ z1_summary <- tibble(z1 = z1[idSampled],
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_GLGC.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_GLGC.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
