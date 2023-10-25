@@ -95,7 +95,7 @@ transformed parameters {
 
 
 model {
-  matrix[N,N] C1 = add_diag(gp_matern32_cov(coords, sigma1, ell1), jitter);
+  matrix[N,N] C1 = gp_matern32_cov(coords, sigma1, ell1);
   matrix[N,N] C2 = gp_matern32_cov(coords, sigma2, ell2);
 
   beta_std ~ std_normal();
