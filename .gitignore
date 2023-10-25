@@ -5,7 +5,7 @@
 *.Rproj.user
 *.Rhistory
 *.RData
-*.Ruserdata
+.Ruserdata
 
 *.html
 *.pdf
@@ -27,3 +27,4 @@ TemperatureDataAnalysis/*.RData
 # knitr and R markdown default cache directories
 *_cache/
 /cache/
+.Rproj.user
