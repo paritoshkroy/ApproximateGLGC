@@ -2,10 +2,10 @@
 !/**/
 !*.*
 
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata
+*.Rproj.user
+*.Rhistory
+*.RData
+*.Ruserdata
 
 *.html
 *.pdf
@@ -13,9 +13,10 @@
 *.qmd
 *.Rmd
 *.md
-OutRData/*
-Summary/*
-Prediction/*
+/*
+ComparingApproximateMethods/*.RData
+ExactVsApproximateMethods/*.RData
+TemperatureDataAnalysis/*.RData
 *.png
 *.jpg
 *.jpeg
