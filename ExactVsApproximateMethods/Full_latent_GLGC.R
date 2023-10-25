@@ -101,14 +101,37 @@ z1_summary <- tibble(z1 = z1[idSampled],
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/Full_latentGLGC.RData"))
+## Recovery of random effect z2
+size_post_samples <- nrow(draws_df); size_post_samples
+post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
+post_z2 <- array(0, dim = c(size_post_samples,nsize)); str(post_z2)
+obsDistMat <- fields::rdist(obsCoords)
+l <- 1
+for(l in 1:size_post_samples){
+  C2 <- matern32(d = obsDistMat, sigma = post_sigma2[l],  lscale = post_ell2[l])
+  post_z2[l,] <- drop(crossprod(chol(C2),rnorm(n = nsize)))
+}
+str(post_z2)
+
+z2_summary <- tibble(z2 = z2[idSampled],
+                     post.mean = apply(post_z2, 2, mean),
+                     post.sd = apply(post_z2, 2, sd),
+                     post.q2.5 = apply(post_z2, 2, quantile2.5),
+                     post.q50 = apply(post_z2, 2, quantile50),
+                     post.q97.5 = apply(post_z2, 2, quantile97.5))
+z2_summary
+z2_summary %>% mutate(btw = between(z2, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
+
+
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, file = paste0(fpath,"ExactVsApproximateMethods/Full_latentGLGC.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
 source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
 exsf <- expose_cmdstanr_functions(model_path = stan_file)
-args(exsf$predict_fullglgc_rng)
+args(exsf$predict_full_latentglgc_rng)
 
 size_post_samples <- nrow(draws_df); size_post_samples
 psize <- nrow(prdCoords); psize
@@ -130,13 +153,15 @@ prdXbeta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_beta[l,])); 
 
 str(exsf$my_gp_matern32_cov(x = lapply(1:nsize, function(i) obsCoords[i,]), y = lapply(1:psize, function(i) prdCoords[i,]), sigma = 1, lscale = 1))
 
-post_ypred <- exsf$predict_fullglgc_rng(
+args(exsf$predict_full_latentglgc_rng)
+post_ypred <- exsf$predict_full_latentglgc_rng(
   y = obsY, 
   obsXb = lapply(1:size_post_samples, function(i) obsXbeta[i,]), 
   predXb = lapply(1:size_post_samples, function(i) prdXbeta[i,]), 
   obsCoords = lapply(1:nsize, function(i) obsCoords[i,]), 
   predCoords = lapply(1:psize, function(i) prdCoords[i,]), 
-  z1obs = lapply(1:size_post_samples, function(i) post_z1[i,]), 
+  z1 = lapply(1:size_post_samples, function(i) post_z1[i,]), 
+  z2 = lapply(1:size_post_samples, function(i) post_z2[i,]), 
   gamma = post_gamma, 
   sigma1 = post_sigma1, 
   sigma2 = post_sigma2, 
@@ -176,4 +201,4 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,VS0.25,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_latentGLGC.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_latentGLGC.RData"))

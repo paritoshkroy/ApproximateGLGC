@@ -22,7 +22,7 @@ return x;
 }
  
 /* */
-array[] vector predict_fullglgc_rng(vector y, array[] vector obsXb, array[] vector predXb, array[] vector obsCoords, array[] vector predCoords, array[] vector z1obs, vector gamma, vector sigma1, vector sigma2, vector lscale1, vector lscale2, vector tau, int nsize, int psize, int postsize){
+array[] vector predict_full_latentglgc_rng(vector y, array[] vector obsXb, array[] vector predXb, array[] vector obsCoords, array[] vector predCoords, array[] vector z1, array[] vector z2, vector gamma, vector sigma1, vector sigma2, vector lscale1, vector lscale2, vector tau, int nsize, int psize, int postsize){
     array[postsize] vector[psize] out;
     int nprint = postsize %/% 10;
     for(l in 1:postsize) {
@@ -31,16 +31,17 @@ array[] vector predict_fullglgc_rng(vector y, array[] vector obsXb, array[] vect
       matrix[nsize,psize] C20 = gp_matern32_cov(obsCoords, predCoords, 1, lscale2[l]);
       matrix[nsize,nsize] Ch1 = cholesky_decompose(add_diag(gp_matern32_cov(obsCoords, 1, lscale1[l]), rep_vector(1e-7,nsize)));
       matrix[nsize,nsize] Ch2 = cholesky_decompose(add_diag(gp_matern32_cov(obsCoords, 1, lscale2[l]), rep_vector(square(tau[l])*inv_square(sigma2[l]),nsize)));
-      vector[nsize] res = y - obsXb[l] - gamma[l]*exp(z1obs[l]);
       for(i in 1:psize) {
         row_vector[nsize] c10 = to_row_vector(C10[1:nsize,i]);
-        real m1 =  c10*mdivide_left_tri_upp(Ch1',mdivide_left_tri_low(Ch1, z1obs[l]));
+        real m1 =  c10*mdivide_left_tri_upp(Ch1',mdivide_left_tri_low(Ch1, z1[l]));
         real v1 = square(sigma1[l])*(1 - dot_self(mdivide_left_tri_low(Ch1, c10')));
         real z10 = normal_rng(m1, sqrt(v1));
         row_vector[nsize] c20 = to_row_vector(C20[1:nsize,i]);
-        real m2 =  predXb[l][i] + gamma[l] * exp(z10) + c20*mdivide_left_tri_upp(Ch2',mdivide_left_tri_low(Ch2, res));
-        real v2 = square(sigma2[l])*(1 + square(tau[l])*inv_square(sigma2[l]) - dot_self(mdivide_left_tri_low(Ch2, c20')));
-        out[l][i] = normal_rng(m2, sqrt(v2));
+        real m2 =  c20*mdivide_left_tri_upp(Ch2',mdivide_left_tri_low(Ch2, z2[l]));
+        real v2 = square(sigma2[l])*(1 - dot_self(mdivide_left_tri_low(Ch2, c20')));
+        real z20 = normal_rng(m2, sqrt(v2));
+        real mu =  predXb[l][i] + gamma[l] * exp(z10) + z20;
+        out[l][i] = normal_rng(mu, tau[l]);
       }
     }
     return out;
