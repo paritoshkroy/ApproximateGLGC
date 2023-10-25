@@ -32,8 +32,8 @@ obsMinDist <- min(obsDistVec)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
-xRangeDat <- sDomain[,1]
-yRangeDat <- sDomain[,2]
+xRangeDat <- c(-1,1)
+yRangeDat <- c(-1,1)
 m1 <- 22; m2 <- 22; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
 c <- c(1.5,1.5)

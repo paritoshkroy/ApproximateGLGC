@@ -82,7 +82,8 @@ parameters{
   real<lower = 0> tau;
   real<lower = 0> ell1;
   real<lower = 0> ell2;
-  vector[N] noise;
+  vector[N] noise1;
+  vector[N] noise2;
 }
 
 transformed parameters {
@@ -91,8 +92,10 @@ transformed parameters {
   }
 
 model {
-  matrix[N,N] C1 = add_diag(gp_matern32_cov(coords, sigma1, ell1), jitter);
-  matrix[N,N] C2 = add_diag(gp_matern32_cov(coords, sigma2, ell2), jitter);
+  matrix[N,N] C1 = gp_matern32_cov(coords, sigma1, ell1);
+  matrix[N,N] C2 = gp_matern32_cov(coords, sigma2, ell2);
+  vector[N] z1 = cholesky_decompose(add_diag(C1,jitter)) * noise1;
+  vector[N] z2 = cholesky_decompose(add_diag(C2,jitter)) * noise2;
   
   beta_std ~ std_normal();
   absgamma ~ std_normal();
@@ -101,8 +104,9 @@ model {
   tau ~ std_normal();
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
-  noise ~ std_normal();
-  y ~ multi_normal_cholesky(X * beta + gamma * exp(cholesky_decompose(C1) * noise), cholesky_decompose(add_diag(C2))));
+  noise1 ~ std_normal();
+  noise2 ~ std_normal();
+  y ~ normal(X * beta + gamma * exp(z1) + z2, tau);
 }
 
 generated quantities{
