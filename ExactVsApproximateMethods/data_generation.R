@@ -5,7 +5,6 @@ library(Matrix)
 library(tidyverse)
 library(magrittr)
 library(tidybayes)
-library(sf)
 library(coda)
 library(nleqslv)
 
