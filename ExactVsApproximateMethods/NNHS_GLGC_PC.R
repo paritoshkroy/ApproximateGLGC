@@ -84,7 +84,8 @@ stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_PC.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
-cmdstan_fit <- mod$sample(data = input, 
+cmdstan_fit <- mod$sample(data = input,
+                          seed = 123,
                           chains = 4,
                           parallel_chains = 4,
                           iter_warmup = 1500,

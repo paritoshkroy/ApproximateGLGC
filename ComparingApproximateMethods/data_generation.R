@@ -20,7 +20,7 @@ lscale1 <- sqrt(2)/2
 lscale2 <- sqrt(2)/2
 tau <- 0.5
 tausq <- tau^2
-gamma <- 1.5
+gamma <- 1
 
 distMat <- fields::rdist(coords)
 
