@@ -31,7 +31,7 @@ z1 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma1, ls
 z2 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma2, lscale = lscale2) + diag(x=1e-9, nrow = nsite, ncol = nsite)), rnorm(nsite)))
 linpred <- muX +  gamma * exp(z1) + z2
 y <- rnorm(n = nsite, mean = linpred, sd = tau)
-nsize <- 200
+nsize <- 500
 idSampled <- sample.int(n = nsite, size = nsize, replace = FALSE)
 set.seed(NULL)
 #hist(y, nclass = 21)
