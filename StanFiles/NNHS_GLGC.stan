@@ -180,15 +180,15 @@ data {
   int<lower=0> K;
   int<lower=0> P;
   vector[N] y;
-  matrix[N, P + 1] X;
+  matrix[N,P] X;
   array[N - 1, K] int neiID;
   matrix[N - 1, K] site2neiDist;
   matrix[N - 1, (K * (K - 1)) %/% 2] neiDistMat;
   matrix[N,2] coords;
   vector[2] L;
   matrix[M,2] lambda;
-  vector[P + 1] mu_beta;
-  matrix[P + 1, P + 1] V_beta;
+  vector[P] mu_theta;
+  matrix[P,P] V_theta;
   real a;
   real b;
   int<lower=0, upper=1> positive_skewness;
@@ -196,12 +196,11 @@ data {
 
 
 transformed data {
-  cholesky_factor_cov[P + 1] chol_V_beta;
   matrix[N,M] H;
   for(i in 1:M){
     H[,i] = eigenfunction(L, to_vector(lambda[i,]), coords);
   }
-  chol_V_beta = cholesky_decompose(V_beta);
+  cholesky_factor_cov[P + 1] chol_V_theta = cholesky_decompose(V_theta);
   int skewness;
   if(positive_skewness==0){
     skewness = -1;
@@ -212,7 +211,7 @@ transformed data {
 
   
 parameters{
-  vector[P + 1] beta_std;
+  vector[P] theta_std;
   real<lower = 0> abs_gamma;
   real<lower = 0> sigma1;
   real<lower = 0> sigma2;
@@ -224,15 +223,15 @@ parameters{
 
 transformed parameters{
    real gamma = skewness * 0.5 * abs_gamma;
-  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
+  // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
+  vector[P] theta = mu_theta + chol_V_theta * theta_std;
   vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
 }
 
 model {
   vector[N] z1 = H * omega1;
   
-  beta_std ~ std_normal();
+  theta_std ~ std_normal();
   abs_gamma ~ std_normal();
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
@@ -240,7 +239,8 @@ model {
   sigma2 ~ std_normal();
   tau ~ std_normal();
   noise1 ~ std_normal();
-  y ~ vecchia_matern32(X * beta + gamma * exp(z1), square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
+  vector[N] mu = X * theta + gamma * exp(z1);
+  y ~ vecchia_matern32(mu, square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
 }
 
 generated quantities {
