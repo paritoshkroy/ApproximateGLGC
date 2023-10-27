@@ -200,7 +200,7 @@ transformed data {
   for(i in 1:M){
     H[,i] = eigenfunction(L, to_vector(lambda[i,]), coords);
   }
-  cholesky_factor_cov[P + 1] chol_V_theta = cholesky_decompose(V_theta);
+  cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
   int skewness;
   if(positive_skewness==0){
     skewness = -1;

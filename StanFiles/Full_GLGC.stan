@@ -52,19 +52,18 @@ data {
   int<lower=0> N;
   int<lower=0> P;
   vector[N] y;
-  matrix[N,P+1] X;
+  matrix[N,P] X;
   array[N] vector[2] coords;
-  vector[P + 1] mu_beta;
-  matrix[P + 1, P + 1] V_beta;
+  vector[P] mu_theta;
+  matrix[P,P] V_theta;
   real<lower=0> a;
   real<lower=0> b;
   int<lower=0, upper=1> positive_skewness;
 }
 
 transformed data {
-  cholesky_factor_cov[P + 1] chol_V_beta;
   vector[N] jitter = rep_vector(1e-9, N);
-  chol_V_beta = cholesky_decompose(V_beta);
+  cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
   int skewness;
   if(positive_skewness==0){
     skewness = -1;
@@ -75,7 +74,7 @@ transformed data {
 
 
 parameters{
-  vector[P+1] beta_std;
+  vector[P] theta_std;
   real<lower = 0> abs_gamma;
   real<lower = 0> sigma1;
   real<lower = 0> sigma2;
@@ -87,8 +86,8 @@ parameters{
 
 transformed parameters {
   real gamma = skewness * 0.5 * abs_gamma;
-  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
+  // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
+  vector[P] theta = mu_theta + chol_V_theta * theta_std;
   }
 
 model {
@@ -97,7 +96,7 @@ model {
   vector[N] z1 = cholesky_decompose(add_diag(C1,jitter)) * noise1;
   matrix[N,N] L = cholesky_decompose(add_diag(C2, rep_vector(square(tau), N) + jitter));
 
-  beta_std ~ std_normal();
+  theta_std ~ std_normal();
   abs_gamma ~ std_normal();
   sigma1 ~ std_normal();
   sigma2 ~ std_normal();
@@ -105,7 +104,8 @@ model {
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();
-  y ~ multi_normal_cholesky(X * beta + gamma * exp(z1), L);
+  vector[N] mu = X * theta + gamma * exp(z1);
+  y ~ multi_normal_cholesky(mu, L);
 }
 
 generated quantities{

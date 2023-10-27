@@ -51,12 +51,12 @@ library(nleqslv)
 ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 
-P <- 2
-mu_beta <- c(mean(obsY),rep(0, P))
-V_beta <- diag(c(2.5*sd(obsY),rep(1,P)))
+P <- 3
+mu_theta <- c(mean(obsY),rep(0,P-1))
+V_theta <- diag(c(10,rep(1,P-1)))
 
 # Keep in mind that the data should be ordered following nearest neighbor settings
-input <- list(N = nsize, K = nNeighbors, P = 2, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_beta = mu_beta, V_beta = V_beta, a = ab[1], b = ab[2], positive_skewness = 1)
+input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
@@ -67,8 +67,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 1500,
+                          iter_sampling = 500,
                           adapt_delta = 0.99,
                           max_treedepth = 12,
                           step_size = 0.25,
@@ -82,8 +82,8 @@ sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
 
 ## Posterior summaries
-pars <- c("beta[1]","beta[2]","beta[3]","sigma1","sigma2","ell1","ell2","tau","gamma")
-pars_true_df <- tibble(variable = pars, true = c(beta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
+pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
+pars_true_df <- tibble(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
 fixed_summary <- inner_join(pars_true_df, fit_summary)
 fixed_summary %>% print(digits = 3)
@@ -137,11 +137,11 @@ post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
 post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
 post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
 post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
-post_beta <- as_tibble(draws_df) %>% select(starts_with("beta[")) %>% as.matrix() %>% unname(); str(post_beta)
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
 str(post_z1)
 
 str(obsX)
-str(post_beta)
+str(post_theta)
 
 ## NNGP Preparation
 psize <- nrow(prdCoords); psize
@@ -156,7 +156,7 @@ post_ypred <- exsf$predict_nnnnglgc_rng(
   obsCoords = lapply(1:nrow(obsCoords), function(i) obsCoords[i,]),
   pred2obsDist = lapply(1:nrow(pred2obsDist), function(i) pred2obsDist[i,]), 
   pred2obsNeiID = lapply(1:nrow(pred2obsNeiID), function(i) pred2obsNeiID[i,]),
-  beta = lapply(1:nrow(post_beta), function(i) post_beta[i,]), 
+  beta = lapply(1:nrow(post_theta), function(i) post_theta[i,]), 
   z1 = lapply(1:nrow(post_z1), function(i) post_z1[i,]), 
   gamma = post_gamma, 
   sigma1 = post_sigma1, 
@@ -183,7 +183,7 @@ mean(pred_summary[,"y"]>pred_summary[,"post.q2.5"] & pred_summary[,"y"]<pred_sum
 
 library(scoringRules)
 ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
-VS0.25 <- vs_sample(y = prdY, dat = t(ypred_draws), p = 0.25); VS0.25
+#VS0.25 <- vs_sample(y = prdY, dat = t(ypred_draws), p = 0.25); VS0.25
 logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs
 CRPS <- mean(crps_sample(y = prdY, dat = t(ypred_draws))); CRPS
 
@@ -193,8 +193,8 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, VS0.25 = VS0.25, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNNN_GLGC") %>%
-  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,VS0.25,logs,`Elapsed Time`)
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNNN_GLGC") %>%
+  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
 save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_GLGC.RData"))

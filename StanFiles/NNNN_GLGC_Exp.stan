@@ -140,12 +140,12 @@ data {
   int<lower=0> K;
   int<lower=0> P;
   vector[N] y;
-  matrix[N, P + 1] X;
+  matrix[N, P] X;
   array[N - 1, K] int neiID;
   matrix[N - 1, K] site2neiDist;
   matrix[N - 1, (K * (K - 1)) %/% 2] neiDistMat;
-  vector[P + 1] mu_beta;
-  matrix[P + 1, P + 1] V_beta;
+  vector[P] mu_theta;
+  matrix[P,P] V_theta;
   real<lower=0> lambda_sigma1;
   real<lower=0> lambda_sigma2;
   real<lower=0> lambda_tau;
@@ -155,8 +155,7 @@ data {
 }
 
 transformed data {
-  cholesky_factor_cov[P + 1] chol_V_beta;
-  chol_V_beta = cholesky_decompose(V_beta);
+  cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
   int skewness;
   if(positive_skewness==0){
     skewness = -1;
@@ -166,11 +165,11 @@ transformed data {
 }
 
 parameters{
-  vector[P + 1] beta_std;
+  vector[P] theta_std;
   real<lower = 0> abs_gamma;
-  real<lower = 0, upper=1> uni_sigma1;
-  real<lower = 0, upper=1> uni_sigma2;
-  real<lower = 0, upper=1> uni_tau;
+  real<lower = 0> sigma1;
+  real<lower = 0> sigma2;
+  real<lower = 0> tau;
   real<lower = 0> ell1;
   real<lower = 0> ell2;
   vector[N] noise1;
@@ -178,24 +177,22 @@ parameters{
 
 transformed parameters{
   real gamma = skewness * 0.5 * abs_gamma;
-  real sigma1 = -log1m(uni_sigma1)*inv(lambda_sigma1);
-  real sigma2 = -log1m(uni_sigma2)*inv(lambda_sigma2);
-  real tau = -log1m(uni_tau)*inv(lambda_tau);
-  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
+  // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
+  vector[P] theta = mu_theta + chol_V_theta * theta_std;
 }
 
 model {
   vector[N] z1 = latent_nngp_matern32_stuff(noise1, square(sigma1), ell1, site2neiDist, neiDistMat, neiID, N, K);
-  beta_std ~ std_normal();
+  theta_std ~ std_normal();
   abs_gamma ~ std_normal();
-  uni_sigma1 ~ uniform(0,1);
-  uni_sigma2 ~ uniform(0,1);
-  uni_tau ~ uniform(0,1);
+  sigma1 ~ exponential(lambda_sigma1);
+  sigma2 ~ exponential(lambda_sigma2);
+  tau ~ exponential(lambda_tau);
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();
-  y ~ vecchia_matern32(X * beta + gamma * exp(z1), square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
+  vector[N] mu = X * theta + gamma * exp(z1);
+  y ~ vecchia_matern32(mu, square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
 }
 
 generated quantities {
