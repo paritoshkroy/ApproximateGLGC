@@ -133,24 +133,23 @@ data {
   int<lower=0> M;
   int<lower=0> P;
   vector[N] y;
-  matrix[N, P + 1] X;
+  matrix[N,P] X;
   matrix[N,2] coords;
   vector[2] L;
   matrix[M,2] lambda;
-  vector[P + 1] mu_beta;
-  matrix[P + 1, P + 1] V_beta;
+  vector[P] mu_theta;
+  matrix[P,P] V_theta;
   real a;
   real b;
   int<lower=0, upper=1> positive_skewness;
 }
 
 transformed data {
-  cholesky_factor_cov[P + 1] chol_V_beta;
   matrix[N,M] H;
   for(i in 1:M){
     H[,i] = eigenfunction(L, to_vector(lambda[i,]), coords);
   }
-  chol_V_beta = cholesky_decompose(V_beta);
+  cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
   int skewness;
   if(positive_skewness==0){
     skewness = -1;
@@ -161,7 +160,7 @@ transformed data {
 
 
 parameters{
-  vector[P+1] beta_std;
+  vector[P] theta_std;
   real<lower = 0> abs_gamma;
   real<lower = 0> sigma1;
   real<lower = 0> sigma2;
@@ -174,8 +173,8 @@ parameters{
 
 transformed parameters{
   real gamma = skewness * 0.5 * abs_gamma;
-  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
+  // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
+  vector[P] theta = mu_theta + chol_V_theta * theta_std;
   vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
   vector[M] omega2 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma2), ell2, M)) .* noise2;
   
@@ -183,11 +182,10 @@ transformed parameters{
 
 
 model {
-  vector[N] Xbeta = X * beta;
   vector[N] z1 = H * omega1;
   vector[N] z2 = H * omega2;
   
-  beta_std ~ std_normal();
+  theta_std ~ std_normal();
   abs_gamma ~ std_normal();
   sigma1 ~ std_normal();
   sigma2 ~ std_normal();
@@ -196,7 +194,8 @@ model {
   ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();
   noise2 ~ std_normal();
-  y ~ normal(Xbeta + gamma * exp(z1) + z2, tau);
+  vector[N] mu = X * theta + gamma * exp(z1) + z2;
+  y ~ normal(mu, tau);
 }
 
 generated quantities {

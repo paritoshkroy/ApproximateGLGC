@@ -133,12 +133,12 @@ data {
   int<lower=0> M;
   int<lower=0> P;
   vector[N] y;
-  matrix[N, P + 1] X;
+  matrix[N, P] X;
   matrix[N,2] coords;
   vector[2] L;
   matrix[M,2] lambda;
-  vector[P + 1] mu_beta;
-  matrix[P + 1, P + 1] V_beta;
+  vector[P] mu_theta;
+  matrix[P,P] V_theta;
   real<lower=0> lambda_sigma1;
   real<lower=0> lambda_sigma2;
   real<lower=0> lambda_tau;
@@ -148,27 +148,26 @@ data {
 }
 
 transformed data {
-  cholesky_factor_cov[P + 1] chol_V_beta;
   matrix[N,M] H;
   for(i in 1:M){
     H[,i] = eigenfunction(L, to_vector(lambda[i,]), coords);
   }
-  chol_V_beta = cholesky_decompose(V_beta);
   int skewness;
   if(positive_skewness==0){
     skewness = -1;
     } else {
       skewness = 1;
     }
+  cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
 }
 
 
 parameters{
-  vector[P+1] beta_std;
+  vector[P] theta_std;
   real<lower = 0> abs_gamma;
-  real<lower = 0, upper=1> uni_sigma1;
-  real<lower = 0, upper=1> uni_sigma2;
-  real<lower = 0, upper=1> uni_tau;
+  real<lower = 0> sigma1;
+  real<lower = 0> sigma2;
+  real<lower = 0> tau;
   real<lower = 0> ell1;
   real<lower = 0> ell2;
   vector[M] noise1;
@@ -176,32 +175,28 @@ parameters{
 }
 
 transformed parameters{
-  real gamma = skewness * 0.5 * abs_gamma;
-  real sigma1 = -log1m(uni_sigma1)*inv(lambda_sigma1);
-  real sigma2 = -log1m(uni_sigma2)*inv(lambda_sigma2);
-  real tau = -log1m(uni_tau)*inv(lambda_tau);
+  real gamma = skewness * abs_gamma;
   vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
   vector[M] omega2 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma2), ell2, M)) .* noise2;
-  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
+  vector[P] theta = mu_theta + chol_V_theta * theta_std;
 }
 
 
 model {
-  vector[N] Xbeta = X * beta;
   vector[N] z1 = H * omega1;
   vector[N] z2 = H * omega2;
   
-  beta_std ~ std_normal();
+  theta_std ~ std_normal();
   abs_gamma ~ std_normal();
-  uni_sigma1 ~ uniform(0,1);
-  uni_sigma2 ~ uniform(0,1);
-  uni_tau ~ uniform(0,1);
+  sigma1 ~ exponential(lambda_sigma1);
+  sigma2 ~ exponential(lambda_sigma2);
+  tau ~ exponential(lambda_tau);
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();
   noise2 ~ std_normal();
-  y ~ normal(Xbeta + gamma * exp(z1) + z2, tau);
+  vector[N] mu = X * theta + gamma * exp(z1) + z2;
+  y ~ normal(mu, tau);
 }
 
 generated quantities {

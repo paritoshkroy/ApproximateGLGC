@@ -60,10 +60,10 @@ ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
 
 head(obsX)
-P <- 2
-mu_beta <- c(mean(obsY),rep(0, P))
-V_beta <- diag(c(2.5*var(obsY),rep(1,P)))
-input <- list(N = nsize, M = mstar, P = 2, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_beta = mu_beta, V_beta = V_beta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], positive_skewness = 1)
+P <- 3
+mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
+V_theta <- diag(c(10,rep(1,P-1))); V_theta
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
@@ -74,8 +74,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 1500,
+                          iter_sampling = 500,
                           adapt_delta = 0.99,
                           max_treedepth = 12,
                           step_size = 0.25)
@@ -88,8 +88,8 @@ sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
 
 ## Posterior summaries
-pars <- c("beta[1]","beta[2]","beta[3]","sigma1","sigma2","ell1","ell2","tau","gamma")
-pars_true_df <- data.frame(variable = pars, true = c(beta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
+pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
+pars_true_df <- data.frame(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
 fixed_summary <- inner_join(pars_true_df, fit_summary)
 fixed_summary %>% print(digits = 3)
@@ -190,21 +190,21 @@ head(z2pred_summary)
 mean(z2pred_summary[,"z2"] > z2pred_summary[,"post.q2.5"] & z2pred_summary[,"z2"] < z2pred_summary[,"post.q97.5"])
 
 ## Compute the means
-post_beta <- as_tibble(draws_df) %>% select(starts_with("beta[")) %>% as.matrix() %>% unname(); str(post_beta)
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
 str(post_z1)
 str(post_z2)
 
 str(obsX)
-str(post_beta)
+str(post_theta)
 
-obsXbeta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_beta[l,])); str(obsXbeta)
-prdXbeta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_beta[l,])); str(prdXbeta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
 
 post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
 post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
 str(post_z1pred)
 str(post_z2pred)
-ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXbeta[l,] + post_gamma[l] * exp(post_z1pred[l,]) + post_z2pred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
+ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXtheta[l,] + post_gamma[l] * exp(post_z1pred[l,]) + post_z2pred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
 str(ypred_draws)
 
 pred_summary <- tibble(
@@ -221,7 +221,7 @@ mean(pred_summary[,"y"]>pred_summary[,"post.q2.5"] & pred_summary[,"y"]<pred_sum
 
 library(scoringRules)
 ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
-VS0.25 <- vs_sample(y = prdY, dat = t(ypred_draws), p = 0.25); VS0.25
+#VS0.25 <- vs_sample(y = prdY, dat = t(ypred_draws), p = 0.25); VS0.25
 logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs
 CRPS <- mean(crps_sample(y = prdY, dat = t(ypred_draws))); CRPS
 
@@ -231,8 +231,8 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, VS0.25 = VS0.25, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSHS_GLGC_Exp") %>%
-  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,VS0.25,logs,`Elapsed Time`)
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSHS_GLGC_Exp") %>%
+  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
 save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_GLGC_Exp.RData"))
