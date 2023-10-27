@@ -162,7 +162,7 @@ transformed data {
 
 parameters{
   vector[P+1] beta_std;
-  real<lower = 0> absgamma;
+  real<lower = 0> abs_gamma;
   real<lower = 0> sigma1;
   real<lower = 0> sigma2;
   real<lower = 0> tau;
@@ -173,11 +173,12 @@ parameters{
 }
 
 transformed parameters{
+  real gamma = skewness * 0.5 * abs_gamma;
   // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
   vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
   vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
   vector[M] omega2 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma2), ell2, M)) .* noise2;
-  real gamma = skewness * absgamma;
+  
 }
 
 
@@ -187,7 +188,7 @@ model {
   vector[N] z2 = H * omega2;
   
   beta_std ~ std_normal();
-  absgamma ~ std_normal();
+  abs_gamma ~ std_normal();
   sigma1 ~ std_normal();
   sigma2 ~ std_normal();
   tau ~ std_normal();

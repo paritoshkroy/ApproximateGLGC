@@ -165,10 +165,10 @@ transformed data {
 
 parameters{
   vector[P+1] beta_std;
-  real<lower = 0> absgamma;
-  real<lower = 0> sigma1;
-  real<lower = 0> sigma2;
-  real<lower = 0> tau;
+  real<lower = 0> abs_gamma;
+  real<lower = 0, upper=1> uni_sigma1;
+  real<lower = 0, upper=1> uni_sigma2;
+  real<lower = 0, upper=1> uni_tau;
   real<lower = 0> ell1;
   real<lower = 0> ell2;
   vector[M] noise1;
@@ -176,11 +176,14 @@ parameters{
 }
 
 transformed parameters{
-  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
+  real gamma = skewness * 0.5 * abs_gamma;
+  real sigma1 = -log1m(uni_sigma1)*inv(lambda_sigma1);
+  real sigma2 = -log1m(uni_sigma2)*inv(lambda_sigma2);
+  real tau = -log1m(uni_tau)*inv(lambda_tau);
   vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
   vector[M] omega2 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma2), ell2, M)) .* noise2;
-  real gamma = skewness * absgamma;
+  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
+  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
 }
 
 
@@ -190,10 +193,10 @@ model {
   vector[N] z2 = H * omega2;
   
   beta_std ~ std_normal();
-  absgamma ~ std_normal();
-  sigma1 ~ exponential(lambda_sigma1);
-  sigma2 ~ exponential(lambda_sigma2);
-  tau ~ exponential(lambda_tau);
+  abs_gamma ~ std_normal();
+  uni_sigma1 ~ uniform(0,1);
+  uni_sigma2 ~ uniform(0,1);
+  uni_tau ~ uniform(0,1);
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();

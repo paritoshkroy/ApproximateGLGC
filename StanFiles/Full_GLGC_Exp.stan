@@ -79,34 +79,40 @@ transformed data {
 
 parameters{
   vector[P+1] beta_std;
-  real<lower = 0> absgamma;
-  real<lower = 0> sigma1;
-  real<lower = 0> sigma2;
-  real<lower = 0> tau;
+  real<lower = 0> abs_gamma;
+  real<lower = 0, upper=1> uni_sigma1;
+  real<lower = 0, upper=1> uni_sigma2;
+  real<lower = 0, upper=1> uni_tau;
   real<lower = 0> ell1;
   real<lower = 0> ell2;
-  vector[N] noise;
+  vector[N] noise1;
 }
 
 transformed parameters {
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std; // // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  real gamma = skewness * absgamma;
+  real gamma = skewness * 0.5 * abs_gamma;
+  real sigma1 = -log1m(uni_sigma1)*inv(lambda_sigma1);
+  real sigma2 = -log1m(uni_sigma2)*inv(lambda_sigma2);
+  real tau = -log1m(uni_tau)*inv(lambda_tau);
+  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
+  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
   }
 
 
 model {
   matrix[N,N] C1 = gp_matern32_cov(coords, sigma1, ell1);
   matrix[N,N] C2 = gp_matern32_cov(coords, sigma2, ell2);
-
+  vector[N] z1 = cholesky_decompose(add_diag(C1,jitter)) * noise1;
+  matrix[N,N] L = cholesky_decompose(add_diag(C2, rep_vector(square(tau), N) + jitter));
+  
   beta_std ~ std_normal();
-  absgamma ~ std_normal();
-  sigma1 ~ exponential(lambda_sigma1);
-  sigma2 ~ exponential(lambda_sigma2);
-  tau ~ exponential(lambda_tau);
+  abs_gamma ~ std_normal();
+  uni_sigma1 ~ uniform(0,1);
+  uni_sigma2 ~ uniform(0,1);
+  uni_tau ~ uniform(0,1);
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
-  noise ~ std_normal();
-  y ~ multi_normal_cholesky(X * beta + gamma * exp(cholesky_decompose(add_diag(C1,jitter)) * noise), cholesky_decompose(add_diag(C2, rep_vector(square(tau), N))));
+  noise1 ~ std_normal();
+  y ~ multi_normal_cholesky(X * beta + gamma * exp(z1), L);
 }
 
 generated quantities{

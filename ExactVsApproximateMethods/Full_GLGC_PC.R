@@ -56,9 +56,9 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
-                          adapt_delta = 0.99,
+                          iter_warmup = 500,
+                          iter_sampling = 500,
+                          adapt_delta = 0.95,
                           max_treedepth = 12,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
@@ -129,6 +129,8 @@ str(post_z1)
 
 str(obsX)
 str(post_beta)
+obsXbeta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_beta[l,])); str(obsXbeta)
+prdXbeta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_beta[l,])); str(prdXbeta)
 
 str(exsf$my_gp_matern32_cov(x = lapply(1:nsize, function(i) obsCoords[i,]), y = lapply(1:psize, function(i) prdCoords[i,]), sigma = 1, lscale = 1))
 

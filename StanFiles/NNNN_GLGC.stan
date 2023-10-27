@@ -164,31 +164,33 @@ transformed data {
 
 parameters{
   vector[P + 1] beta_std;
-  real<lower = 0> absgamma;
+  real<lower = 0> abs_gamma;
   real<lower = 0> sigma1;
   real<lower = 0> sigma2;
   real<lower = 0> ell1;
   real<lower = 0> ell2;
   real<lower = 0> tau;
-  vector[N] noise;
+  vector[N] noise1;
 }
 
 transformed parameters{
+  real gamma = skewness * 0.5 * abs_gamma;
   // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
   vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
-  real gamma = skewness * absgamma;
 }
 
 model {
+  vector[N] z1 = latent_nngp_matern32_stuff(noise1, square(sigma1), ell1, site2neiDist, neiDistMat, neiID, N, K);
+  
   beta_std ~ std_normal();
-  absgamma ~ std_normal();
+  abs_gamma ~ std_normal();
   sigma1 ~ std_normal();
   sigma2 ~ std_normal();
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
   tau ~ std_normal();
-  noise ~ std_normal();
-  y ~ vecchia_matern32(X * beta + gamma * exp(latent_nngp_matern32_stuff(noise, square(sigma1), ell1, site2neiDist, neiDistMat, neiID, N, K)), square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
+  noise1 ~ std_normal();
+  y ~ vecchia_matern32(X * beta + gamma * exp(z1), square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
 }
 
 generated quantities {

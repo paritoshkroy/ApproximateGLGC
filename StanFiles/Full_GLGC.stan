@@ -22,7 +22,7 @@ return x;
 }
  
 /* */
-array[] vector predict_fullglgc_rng(vector y, array[] vector obsXb, array[] vector predXb, array[] vector obsCoords, array[] vector predCoords, array[] vector z1obs, vector gamma, vector sigma1, vector sigma2, vector lscale1, vector lscale2, vector tau, int nsize, int psize, int postsize){
+array[] vector predict_fullglgc_rng(vector y, array[] vector obsXb, array[] vector predXb, array[] vector obsCoords, array[] vector predCoords, array[] vector z1, vector gamma, vector sigma1, vector sigma2, vector lscale1, vector lscale2, vector tau, int nsize, int psize, int postsize){
     array[postsize] vector[psize] out;
     int nprint = postsize %/% 10;
     for(l in 1:postsize) {
@@ -31,10 +31,10 @@ array[] vector predict_fullglgc_rng(vector y, array[] vector obsXb, array[] vect
       matrix[nsize,psize] C20 = gp_matern32_cov(obsCoords, predCoords, 1, lscale2[l]);
       matrix[nsize,nsize] Ch1 = cholesky_decompose(add_diag(gp_matern32_cov(obsCoords, 1, lscale1[l]), rep_vector(1e-7,nsize)));
       matrix[nsize,nsize] Ch2 = cholesky_decompose(add_diag(gp_matern32_cov(obsCoords, 1, lscale2[l]), rep_vector(square(tau[l])*inv_square(sigma2[l]),nsize)));
-      vector[nsize] res = y - obsXb[l] - gamma[l]*exp(z1obs[l]);
+      vector[nsize] res = y - obsXb[l] - gamma[l]*exp(z1[l]);
       for(i in 1:psize) {
         row_vector[nsize] c10 = to_row_vector(C10[1:nsize,i]);
-        real m1 =  c10*mdivide_left_tri_upp(Ch1',mdivide_left_tri_low(Ch1, z1obs[l]));
+        real m1 =  c10*mdivide_left_tri_upp(Ch1',mdivide_left_tri_low(Ch1, z1[l]));
         real v1 = square(sigma1[l])*(1 - dot_self(mdivide_left_tri_low(Ch1, c10')));
         real z10 = normal_rng(m1, sqrt(v1));
         row_vector[nsize] c20 = to_row_vector(C20[1:nsize,i]);
@@ -76,33 +76,36 @@ transformed data {
 
 parameters{
   vector[P+1] beta_std;
-  real<lower = 0> absgamma;
+  real<lower = 0> abs_gamma;
   real<lower = 0> sigma1;
   real<lower = 0> sigma2;
   real<lower = 0> tau;
   real<lower = 0> ell1;
   real<lower = 0> ell2;
-  vector[N] noise;
+  vector[N] noise1;
 }
 
 transformed parameters {
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std; // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  real gamma = skewness * absgamma;
+  real gamma = skewness * 0.5 * abs_gamma;
+  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
+  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
   }
 
 model {
   matrix[N,N] C1 = gp_matern32_cov(coords, sigma1, ell1);
   matrix[N,N] C2 = gp_matern32_cov(coords, sigma2, ell2);
+  vector[N] z1 = cholesky_decompose(add_diag(C1,jitter)) * noise1;
+  matrix[N,N] L = cholesky_decompose(add_diag(C2, rep_vector(square(tau), N) + jitter));
 
   beta_std ~ std_normal();
-  absgamma ~ std_normal();
+  abs_gamma ~ std_normal();
   sigma1 ~ std_normal();
   sigma2 ~ std_normal();
   tau ~ std_normal();
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
-  noise ~ std_normal();
-  y ~ multi_normal_cholesky(X * beta + gamma * exp(cholesky_decompose(add_diag(C1,jitter)) * noise), cholesky_decompose(add_diag(C2, rep_vector(square(tau), N))));
+  noise1 ~ std_normal();
+  y ~ multi_normal_cholesky(X * beta + gamma * exp(z1), L);
 }
 
 generated quantities{

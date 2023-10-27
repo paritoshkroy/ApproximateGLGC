@@ -119,13 +119,13 @@ mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(siz
 
 ## Recovery of random effect z1
 size_post_samples <- nrow(draws_df); size_post_samples
-post_omega <- as_tibble(draws_df) %>% select(starts_with("omega[")) %>% as.matrix() %>% unname(); str(post_omega)
+post_omega1 <- as_tibble(draws_df) %>% select(starts_with("omega1[")) %>% as.matrix() %>% unname(); str(post_omega1)
 eigenfunction_compute <- function(x, L, lambda) { 
   apply(sqrt(1/L) * sin(sqrt(lambda) %*% diag(x + L)), 1, prod)
 }
 obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda)))
 str(obsH)
-post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega[l,])); str(post_z1)
+post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega1[l,])); str(post_z1)
 
 z1_summary <- tibble(z1 = z1[idSampled],
                      post.mean = apply(post_z1, 2, mean),
@@ -149,7 +149,7 @@ args(exsf$predict_nnhsglgc_rng)
 ### Random effect z1 at predicted locations
 psize <- nrow(prdCoords); psize
 predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
-post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega[l,])); str(post_z1pred)
+post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,])); str(post_z1pred)
 
 z1pred_summary <- tibble(
   z1 = z1[-idSampled],

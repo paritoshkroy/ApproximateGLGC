@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"ExactVsApproximateMethods/data_generation.R"))
@@ -57,6 +57,7 @@ pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
 lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
 pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
+summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
 
 head(obsX)
 P <- 2
@@ -75,7 +76,7 @@ cmdstan_fit <- mod$sample(data = input,
                           parallel_chains = 4,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
-                          adapt_delta = 0.99,
+                          adapt_delta = 0.98,
                           max_treedepth = 12,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()

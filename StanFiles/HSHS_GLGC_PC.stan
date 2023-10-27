@@ -165,22 +165,27 @@ transformed data {
 
 parameters{
   vector[P+1] beta_std;
-  real<lower = 0> absgamma;
-  real<lower = 0> sigma1;
-  real<lower = 0> sigma2;
-  real<lower = 0> tau;
-  real<lower = 0> ell1;
-  real<lower = 0> ell2;
+  real abs_gamma;
+  real<lower = 0, upper=1> uni_sigma1;
+  real<lower = 0, upper=1> uni_sigma2;
+  real<lower = 0, upper=1> uni_tau;
+  real<lower = 0, upper=1> uni_ell1;
+  real<lower = 0, upper=1> uni_ell2;
   vector[M] noise1;
   vector[M] noise2;
 }
 
 transformed parameters{
-  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
+  real gamma = skewness * 0.5 * abs_gamma;
+  real sigma1 = -log1m(uni_sigma1)*inv(lambda_sigma1);
+  real sigma2 = -log1m(uni_sigma2)*inv(lambda_sigma2);
+  real ell1 = -lambda_ell1*inv(log(uni_ell1));
+  real ell2 = -lambda_ell2*inv(log(uni_ell2));
+  real tau = -log1m(uni_tau)*inv(lambda_tau);
+  //implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
   vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
   vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
   vector[M] omega2 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma2), ell2, M)) .* noise2;
-  real gamma = skewness * absgamma;
 }
 
 
@@ -190,12 +195,12 @@ model {
   vector[N] z2 = H * omega2;
   
   beta_std ~ std_normal();
-  absgamma ~ std_normal();
-  sigma1 ~ exponential(lambda_sigma1);
-  sigma2 ~ exponential(lambda_sigma2);
-  tau ~ exponential(lambda_tau);
-  ell1 ~ frechet(1,lambda_ell1);
-  ell2 ~ frechet(1,lambda_ell2);
+  abs_gamma ~ normal(0,1);   //gamma ~ normal(0, 0.5); 
+  uni_sigma1 ~ uniform(0,1); //sigma1 ~ exponential(lambda_sigma1);
+  uni_sigma2 ~ uniform(0,1); //sigma2 ~ exponential(lambda_sigma2);
+  uni_tau ~ uniform(0,1);    //tau ~ exponential(lambda_tau);
+  uni_ell1 ~ uniform(0,1);   //ell1 ~ frechet(1,lambda_ell1);
+  uni_ell2 ~ uniform(0,1);   //ell2 ~ frechet(1,lambda_ell2);
   noise1 ~ std_normal();
   noise2 ~ std_normal();
   y ~ normal(Xbeta + gamma * exp(z1) + z2, tau);

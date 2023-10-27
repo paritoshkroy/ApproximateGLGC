@@ -103,13 +103,13 @@ args(exsf$predict_nnnnglgc_rng)
 
 ## Recovery of random effect z1
 size_post_samples <- nrow(draws_df); size_post_samples
-post_noise <- as_tibble(draws_df) %>% select(starts_with("noise[")) %>% as.matrix() %>% unname(); str(post_noise)
+post_noise1 <- as_tibble(draws_df) %>% select(starts_with("noise1[")) %>% as.matrix() %>% unname(); str(post_noise1)
 post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
 post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
 post_z1 <- array(0, dim = c(size_post_samples,nsize)); str(post_z1)
 l <- 1
 for(l in 1:size_post_samples){
-  post_z1[l,] <- exsf$latent_nngp_matern32_stuff(noise = post_noise[l,], sigmasq = post_sigma1[l]^2, lscale = post_ell1[l], site2neiDist = input$site2neiDist, neiDistMat = input$neiDistMat, neiID = lapply(1:nrow(input$neiID), function(l) input$neiID[l,]), N = input$N, K = input$K)
+  post_z1[l,] <- exsf$latent_nngp_matern32_stuff(noise = post_noise1[l,], sigmasq = post_sigma1[l]^2, lscale = post_ell1[l], site2neiDist = input$site2neiDist, neiDistMat = input$neiDistMat, neiID = lapply(1:nrow(input$neiID), function(l) input$neiID[l,]), N = input$N, K = input$K)
 }
 str(post_z1)
 
