@@ -226,7 +226,7 @@ parameters{
 }
 
 transformed parameters{
-  real gamma = skewness * abs_gamma;
+  real gamma = skewness * 0.5 * abs_gamma;
   real sigma1 = -log1m(uni_sigma1)*inv(lambda_sigma1);
   real sigma2 = -log1m(uni_sigma2)*inv(lambda_sigma2);
   real tau = -log1m(uni_tau)*inv(lambda_tau);

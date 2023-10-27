@@ -56,9 +56,9 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 500,
-                          iter_sampling = 500,
-                          adapt_delta = 0.95,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
+                          adapt_delta = 0.99,
                           max_treedepth = 12,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
@@ -88,12 +88,13 @@ mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(siz
 size_post_samples <- nrow(draws_df); size_post_samples
 post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
 post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
+post_noise1 <- as_tibble(draws_df) %>% select(starts_with("noise1[")) %>% as.matrix() %>% unname(); str(post_noise1)
 post_z1 <- array(0, dim = c(size_post_samples,nsize)); str(post_z1)
 obsDistMat <- fields::rdist(obsCoords)
 l <- 1
 for(l in 1:size_post_samples){
   C1 <- matern32(d = obsDistMat, sigma = post_sigma1[l],  lscale = post_ell1[l])
-  post_z1[l,] <- drop(crossprod(chol(C1),rnorm(n = nsize)))
+  post_z1[l,] <- drop(crossprod(chol(C1),post_noise1[l,]))
 }
 str(post_z1)
 
@@ -140,7 +141,7 @@ post_ypred <- exsf$predict_fullglgc_rng(
   predXb = lapply(1:size_post_samples, function(i) prdXbeta[i,]), 
   obsCoords = lapply(1:nsize, function(i) obsCoords[i,]), 
   predCoords = lapply(1:psize, function(i) prdCoords[i,]), 
-  z1obs = lapply(1:size_post_samples, function(i) post_z1[i,]), 
+  z1 = lapply(1:size_post_samples, function(i) post_z1[i,]), 
   gamma = post_gamma, 
   sigma1 = post_sigma1, 
   sigma2 = post_sigma2, 
