@@ -13,6 +13,7 @@
 *.qmd
 *.Rmd
 *.md
+TunningParameterSensitivity/*.RData
 ComparingApproximateMethods/*.RData
 ExactVsApproximateMethods/*.RData
 TemperatureDataAnalysis/*.RData
