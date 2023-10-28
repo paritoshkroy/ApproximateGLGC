@@ -13,7 +13,6 @@
 *.qmd
 *.Rmd
 *.md
-/*
 ComparingApproximateMethods/*.RData
 ExactVsApproximateMethods/*.RData
 TemperatureDataAnalysis/*.RData

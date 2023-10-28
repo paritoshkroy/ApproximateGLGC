@@ -36,22 +36,22 @@ library(nleqslv)
 ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 
-P <- 3
-mu_theta <- c(mean(obsY),rep(0, P-1))
-V_theta <- diag(c(10,rep(1,P-1)))
-input <- list(N = nsize, P = P, y = obsY, X = obsX, coords = obsCoords, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], positive_skewness = 1)
+P <- 2
+mu_beta <- c(mean(obsY),rep(0, P))
+V_beta <- diag(c(2.5*sd(obsY),rep(1,P)))
+input <- list(N = nsize, P = P, y = obsY, X = obsX, coords = obsCoords, mu_beta = mu_beta, V_beta = V_beta, a = ab[1], b = ab[2], positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/Full_GLGC.stan")
+stan_file <- paste0(fpath,"StanFiles/Full_latentGLGC.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 12,
                           step_size = 0.25,
@@ -65,8 +65,8 @@ sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
 
 ## Posterior summaries
-pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
-pars_true_df <- tibble(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
+pars <- c("beta[1]","beta[2]","beta[3]","sigma1","sigma2","ell1","ell2","tau","gamma")
+pars_true_df <- tibble(variable = pars, true = c(beta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
 fixed_summary <- inner_join(pars_true_df, fit_summary)
 fixed_summary %>% print(digits = 3)
@@ -83,13 +83,12 @@ mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(siz
 size_post_samples <- nrow(draws_df); size_post_samples
 post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
 post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
-post_noise1 <- as_tibble(draws_df) %>% select(starts_with("noise1[")) %>% as.matrix() %>% unname(); str(post_noise1)
 post_z1 <- array(0, dim = c(size_post_samples,nsize)); str(post_z1)
 obsDistMat <- fields::rdist(obsCoords)
 l <- 1
 for(l in 1:size_post_samples){
   C1 <- matern32(d = obsDistMat, sigma = post_sigma1[l],  lscale = post_ell1[l])
-  post_z1[l,] <- drop(crossprod(chol(C1),post_noise1[l,]))
+  post_z1[l,] <- drop(crossprod(chol(C1),rnorm(n = nsize)))
 }
 str(post_z1)
 
@@ -102,44 +101,70 @@ z1_summary <- tibble(z1 = z1[idSampled],
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/Full_GLGC.RData"))
+## Recovery of random effect z2
+size_post_samples <- nrow(draws_df); size_post_samples
+post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
+post_z2 <- array(0, dim = c(size_post_samples,nsize)); str(post_z2)
+obsDistMat <- fields::rdist(obsCoords)
+l <- 1
+for(l in 1:size_post_samples){
+  C2 <- matern32(d = obsDistMat, sigma = post_sigma2[l],  lscale = post_ell2[l])
+  post_z2[l,] <- drop(crossprod(chol(C2),rnorm(n = nsize)))
+}
+str(post_z2)
+
+z2_summary <- tibble(z2 = z2[idSampled],
+                     post.mean = apply(post_z2, 2, mean),
+                     post.sd = apply(post_z2, 2, sd),
+                     post.q2.5 = apply(post_z2, 2, quantile2.5),
+                     post.q50 = apply(post_z2, 2, quantile50),
+                     post.q97.5 = apply(post_z2, 2, quantile97.5))
+z2_summary
+z2_summary %>% mutate(btw = between(z2, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
+
+
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, file = paste0(fpath,"ExactVsApproximateMethods/Full_latentGLGC.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
 source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
 exsf <- expose_cmdstanr_functions(model_path = stan_file)
-args(exsf$predict_fullglgc_rng)
+args(exsf$predict_full_latentglgc_rng)
 
 size_post_samples <- nrow(draws_df); size_post_samples
 psize <- nrow(prdCoords); psize
+
 post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
 post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
 post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
 post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
 post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
 post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
-post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+post_beta <- as_tibble(draws_df) %>% select(starts_with("beta[")) %>% as.matrix() %>% unname(); str(post_beta)
 str(post_z1)
 
 str(obsX)
-str(post_theta)
+str(post_beta)
 
-obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
-prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
+obsXbeta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_beta[l,])); str(obsXbeta)
+prdXbeta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_beta[l,])); str(prdXbeta)
 
 str(exsf$my_gp_matern32_cov(x = lapply(1:nsize, function(i) obsCoords[i,]), y = lapply(1:psize, function(i) prdCoords[i,]), sigma = 1, lscale = 1))
 
-post_ypred <- exsf$predict_fullglgc_rng(
+args(exsf$predict_full_latentglgc_rng)
+post_ypred <- exsf$predict_full_latentglgc_rng(
   y = obsY, 
-  obsXb = lapply(1:size_post_samples, function(i) obsXtheta[i,]), 
-  predXb = lapply(1:size_post_samples, function(i) prdXtheta[i,]), 
+  obsXb = lapply(1:size_post_samples, function(i) obsXbeta[i,]), 
+  predXb = lapply(1:size_post_samples, function(i) prdXbeta[i,]), 
   obsCoords = lapply(1:nsize, function(i) obsCoords[i,]), 
   predCoords = lapply(1:psize, function(i) prdCoords[i,]), 
   z1 = lapply(1:size_post_samples, function(i) post_z1[i,]), 
+  z2 = lapply(1:size_post_samples, function(i) post_z2[i,]), 
   gamma = post_gamma, 
   sigma1 = post_sigma1, 
-  sigma2 = post_sigma2,
+  sigma2 = post_sigma2, 
   lscale1 = post_ell1,
   lscale2 = post_ell2, 
   tau = post_tau, 
@@ -162,7 +187,7 @@ mean(pred_summary[,"y"]>pred_summary[,"post.q2.5"] & pred_summary[,"y"]<pred_sum
 
 library(scoringRules)
 ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
-#VS0.25 <- vs_sample(y = prdY, dat = t(ypred_draws), p = 0.25); VS0.25
+VS0.25 <- vs_sample(y = prdY, dat = t(ypred_draws), p = 0.25); VS0.25
 logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs
 CRPS <- mean(crps_sample(y = prdY, dat = t(ypred_draws))); CRPS
 
@@ -172,8 +197,8 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "Full_GLGC") %>%
-  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
+  mutate(ES = ES, VS0.25 = VS0.25, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "Full_latentGLGC") %>%
+  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,VS0.25,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_GLGC.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_latentGLGC.RData"))
