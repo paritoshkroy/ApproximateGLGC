@@ -67,13 +67,12 @@ mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
-                          seed = 123,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 500,
+                          iter_warmup = 100,
+                          iter_sampling = 100,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
@@ -82,7 +81,6 @@ elapsed_time$total/3600
 cmdstan_fit$cmdstan_diagnose()
 sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
-
 ## Posterior summaries
 pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
 pars_true_df <- tibble(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
