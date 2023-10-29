@@ -21,7 +21,7 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args)==0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
-node <- as.numeric(args[1])-200 ### specify correct node here
+node <- as.numeric(args[1])-140 ### specify correct node here
 cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Data generation
@@ -61,7 +61,7 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 15
+nNeighbors <- 10
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -154,7 +154,7 @@ z1_summary <- tibble(z1 = obsZ1,
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TunningParameterSensitivity/NN15_HS22_LS",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TunningParameterSensitivity/NN10_HS22_LS",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -249,9 +249,9 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("NN15_HS22_LS",node)) %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("NN10_HS22_LS",node)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/NN15_HS22_LS",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/NN10_HS22_LS",node,".RData"))
 
