@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --array=301-310  # 10 nodes runs this model independently
+#SBATCH --array=41-50  # 10 nodes runs this model independently
 #SBATCH --account=def-aschmidt  # replace this with your own account
 #SBATCH --ntasks=16              # number of processes
 #SBATCH --mem-per-cpu=16000M      # memory; default unit is megabytes
-#SBATCH --time=24:00:00         # time (HH:MM:SS)
+#SBATCH --time=40:00:00         # time (HH:MM:SS)
 #SBATCH --output=/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/TunningParameterSensitivity/%x-%j.out
 
 # Modules
