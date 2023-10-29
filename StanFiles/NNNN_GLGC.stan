@@ -173,7 +173,7 @@ parameters{
 }
 
 transformed parameters{
-  real gamma = skewness * 0.5 * abs_gamma;
+  real gamma = skewness * abs_gamma;
   // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
 }

@@ -11,7 +11,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 2
+node <- 5
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -40,6 +40,10 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
+obsZ1 <- z1[idSampled]
+prdZ1 <- z1[-idSampled]
+obsZ2 <- z2[idSampled]
+prdZ2 <- z2[-idSampled]
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -86,12 +90,11 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
-                          step_size = 0.25,
-                          init = 1)
+                          max_treedepth = 15,
+                          step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
@@ -132,7 +135,7 @@ for(l in 1:size_post_samples){
 }
 str(post_z1)
 
-z1_summary <- tibble(z1 = z1[idSampled],
+z1_summary <- tibble(z1 = obsZ1,
                      post.mean = apply(post_z1, 2, mean),
                      post.sd = apply(post_z1, 2, sd),
                      post.q2.5 = apply(post_z1, 2, quantile2.5),
@@ -140,7 +143,6 @@ z1_summary <- tibble(z1 = z1[idSampled],
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
-
 
 save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"LengthscaleSensitivity/NNNN_GLGC_LS",node,".RData"))
 

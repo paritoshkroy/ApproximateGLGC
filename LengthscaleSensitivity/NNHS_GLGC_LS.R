@@ -40,6 +40,10 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
+obsZ1 <- z1[idSampled]
+prdZ1 <- z1[-idSampled]
+obsZ2 <- z2[idSampled]
+prdZ2 <- z2[-idSampled]
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -141,7 +145,7 @@ obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda
 str(obsH)
 post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega1[l,])); str(post_z1)
 
-z1_summary <- tibble(z1 = z1[idSampled],
+z1_summary <- tibble(z1 = obsZ1,
                      post.mean = apply(post_z1, 2, mean),
                      post.sd = apply(post_z1, 2, sd),
                      post.q2.5 = apply(post_z1, 2, quantile2.5),
@@ -166,7 +170,7 @@ predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambd
 post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,])); str(post_z1pred)
 
 z1pred_summary <- tibble(
-  z1 = z1[-idSampled],
+  z1 = prdZ1,
   post.mean = apply(post_z1pred, 2, mean),
   post.sd = apply(post_z1pred, 2, sd),
   post.q2.5 = apply(post_z1pred, 2, quantile2.5),
