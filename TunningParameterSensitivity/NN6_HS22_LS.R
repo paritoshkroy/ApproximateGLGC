@@ -8,11 +8,30 @@ library(tidybayes)
 library(coda)
 library(nleqslv)
 
+###########################################################################
+# Local PC
+###########################################################################
+node <- 2
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
+##########################################################################
+# ARC Preparation
+##########################################################################
 fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+args <- commandArgs(trailingOnly=TRUE)
+if (length(args)==0) {
+  stop("At least one argument must be supplied", call.=FALSE)
+}
+node <- as.numeric(args[1])-200 ### specify correct node here
+cat("The seed used to be ", node, "\n")
+##########################################################################
+# Data generation
+##########################################################################
+ells <- seq(0.1,1,l=10)
+lscale1 <- ells[node]; lscale1
+lscale2 <- ells[node]; lscale2
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ExactVsApproximateMethods/data_generation.R"))
+source(paste0(fpath,"TunningParameterSensitivity/data_generation.R"))
 
 # partition as observed and predicted
 obsCoords <- coords[idSampled,]
@@ -25,7 +44,6 @@ obsZ1 <- z1[idSampled]
 prdZ1 <- z1[-idSampled]
 obsZ2 <- z2[idSampled]
 prdZ2 <- z2[-idSampled]
-
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -136,7 +154,7 @@ z1_summary <- tibble(z1 = obsZ1,
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TunningParameterSensitivity/NNHS_GLGC_15NN.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TunningParameterSensitivity/NN15_HS22_LS",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -231,9 +249,9 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNHS_GLGC_15NN") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("NN15_HS22_LS",node)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, sampler_diag, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/NNHS_GLGC_15NN.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/NN15_HS22_LS",node,".RData"))
 
