@@ -21,6 +21,11 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
+obsZ1 <- z1[idSampled]
+prdZ1 <- z1[-idSampled]
+obsZ2 <- z2[idSampled]
+prdZ2 <- z2[-idSampled]
+
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -28,6 +33,7 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
+
 
 # Constants
 lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
@@ -84,10 +90,10 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
@@ -122,7 +128,7 @@ obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda
 str(obsH)
 post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega1[l,])); str(post_z1)
 
-z1_summary <- tibble(z1 = z1[idSampled],
+z1_summary <- tibble(z1 = obsZ1,
                      post.mean = apply(post_z1, 2, mean),
                      post.sd = apply(post_z1, 2, sd),
                      post.q2.5 = apply(post_z1, 2, quantile2.5),
@@ -131,7 +137,7 @@ z1_summary <- tibble(z1 = z1[idSampled],
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TunningParameterSensitivity/NNHS_GLGC_10NN.RData"))
+save(elapsed_time, sampler_diag, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TunningParameterSensitivity/NNHS_GLGC_10NN.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -147,7 +153,7 @@ predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambd
 post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,])); str(post_z1pred)
 
 z1pred_summary <- tibble(
-  z1 = z1[-idSampled],
+  z1 = prdZ1,
   post.mean = apply(post_z1pred, 2, mean),
   post.sd = apply(post_z1pred, 2, sd),
   post.q2.5 = apply(post_z1pred, 2, quantile2.5),

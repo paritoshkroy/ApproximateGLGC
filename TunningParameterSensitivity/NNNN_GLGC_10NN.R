@@ -21,6 +21,10 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
+obsZ1 <- z1[idSampled]
+prdZ1 <- z1[-idSampled]
+obsZ2 <- z2[idSampled]
+prdZ2 <- z2[-idSampled]
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -71,13 +75,12 @@ mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input,
-                          seed = 123,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
@@ -119,7 +122,7 @@ for(l in 1:size_post_samples){
 }
 str(post_z1)
 
-z1_summary <- tibble(z1 = z1[idSampled],
+z1_summary <- tibble(z1 = obsZ1,
                      post.mean = apply(post_z1, 2, mean),
                      post.sd = apply(post_z1, 2, sd),
                      post.q2.5 = apply(post_z1, 2, quantile2.5),
@@ -203,5 +206,5 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/NNNN_GLGC_10NN.RData"))
+save(elapsed_time, sampler_diag, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/NNNN_GLGC_10NN.RData"))
 
