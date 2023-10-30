@@ -13,16 +13,100 @@ library(scoringRules)
 ### Gaussian Model
 ###########################################################################
 fname <- list.files(pattern = "*\\.RData", full.names = FALSE)
+fixed_summary_list <- lapply(1:length(fname), function(node){
+  load(fname[node])
+  fixed_summary <- fixed_summary %>% 
+    mutate(LS = unlist(strsplit(fname[node], "_"))[3]) %>%
+    mutate(LS = as.numeric(gsub(".*?([0-9]+).*", "\\1", LS))) %>%
+    mutate(Method = paste(unlist(strsplit(fname[node], "_"))[1], unlist(strsplit(fname[node], "_"))[2], sep="_")) %>%
+    select(Method,LS,everything())
+  return(fixed_summary)
+})
+fixed_summary <- do.call(rbind, fixed_summary_list)
+fixed_summary %>% filter(variable %in% "ell1") %>% arrange(LS)
+fixed_summary %>% filter(variable %in% "ell2") %>% arrange(LS)
+fixed_summary %>% filter(variable %in% "gamma") %>% arrange(LS)
+fixed_summary %>% arrange(LS == 1)
+
+fixed_summary %>% 
+  filter(LS == 1) %>%
+  filter(variable %in% "ell1") %>% 
+  ggplot(aes(x = Method)) + 
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25) +
+  geom_point(aes(y = `50%`)) +
+  facet_wrap(~LS, nrow = 2, labeller = label_bquote("\u2113"[1]~"="~.(LS))) +
+  theme_bw() +
+  theme(strip.background = element_blank(),
+        panel.grid = element_blank(),
+        strip.text = element_text(size = 12))
+
+fixed_summary %>% 
+  filter(variable %in% "ell2") %>% 
+  ggplot(aes(x = Method)) + 
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25) +
+  geom_point(aes(y = `50%`)) +
+  facet_wrap(~LS, nrow = 2, labeller = label_bquote("\u2113"[2]~"="~.(LS))) +
+  theme_bw() +
+  theme(strip.background = element_blank(),
+        panel.grid = element_blank(),
+        strip.text = element_text(size = 12))
+
+fixed_summary %>% 
+  filter(variable %in% "gamma") %>% 
+  filter(LS == 2) %>%
+  ggplot(aes(x = Method)) + 
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25) +
+  geom_point(aes(y = `50%`)) +
+  facet_wrap(~LS, nrow = 2, labeller = label_bquote(gamma~"="~.(LS))) +
+  theme_bw() +
+  theme(strip.background = element_blank(),
+        panel.grid = element_blank(),
+        strip.text = element_text(size = 12))
+
+
+fixed_summary %>% 
+  filter(variable %in% "theta[1]") %>% 
+  filter(LS == 1) %>%
+  ggplot(aes(x = Method)) + 
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25) +
+  geom_point(aes(y = `50%`)) +
+  facet_wrap(~LS, nrow = 2, labeller = label_bquote(gamma~"="~.(LS))) +
+  theme_bw() +
+  theme(strip.background = element_blank(),
+        panel.grid = element_blank(),
+        strip.text = element_text(size = 12))
+
+#######################
 scores_list <- lapply(1:length(fname), function(node){
   load(fname[node])
-  return(scores_df %>% mutate(LS = unlist(strsplit(fname[node], "_"))[[3]]))
+  if(exists("scores_df")) return(scores_df %>% mutate(LS = unlist(strsplit(fname[node], "_"))[[3]]))
 })
 scores_df <- do.call(rbind, scores_list)
 scores_df <- scores_df %>% 
   mutate(LS = as.numeric(gsub(".*?([0-9]+).*", "\\1", LS)))
 scores_df <- scores_df %>% separate(Method, into = c("x","y"), sep = "_L")
 scores_df <- scores_df %>% rename(Method = x) %>% select(-y)
-                                                                          
+scores_df <- scores_df %>% separate(Method, into = c("x","y"), sep = "_")
+scores_df <- scores_df %>% 
+  mutate(C1 = gsub("[^A-Za-z]","",x)) %>% 
+  mutate(C2 = gsub("[^A-Za-z]","",y)) %>%
+  mutate(m1 = as.numeric(gsub(".*?([0-9]+).*", "\\1", x))) %>%
+  mutate(m2 = as.numeric(gsub(".*?([0-9]+).*", "\\1", y))) %>%
+  mutate(Method = paste0(C1,C2)) %>%
+  select(-x,-y) %>%
+  select(Method,m1,m2,LS,everything())
+
+scores_df %>% filter(Method == "HSHS")
+
+library(gridExtra)
+grid.arrange(
+  scores_df %>% filter(Method == "NNNN" & LS >1) %>% ggplot(aes(x = LS, y = ES)) + geom_line(aes(col = factor(m1))) + ylim(40,85) + theme_bw() + theme(panel.grid = element_blank(), strip.background = element_blank(), strip.text = element_text(size = 12), legend.position = c(0.8,0.8), legend.title = element_blank()),
+  scores_df %>% filter(Method == "NNHS" & LS >1) %>% ggplot(aes(x = LS, y = ES)) + geom_line(aes(col = factor(m1))) + ylim(40,85) + theme_bw() + theme(panel.grid = element_blank(), strip.background = element_blank(), strip.text = element_text(size = 12), legend.position = c(0.8,0.8), legend.title = element_blank()),
+  scores_df %>% filter(Method == "HSHS" & LS >1) %>% ggplot(aes(x = LS, y = ES)) + geom_line(aes(col = factor(m1))) + ylim(40,85) + theme_bw() + theme(panel.grid = element_blank(), strip.background = element_blank(), strip.text = element_text(size = 12), legend.position = c(0.8,0.8), legend.title = element_blank()), ncol = 3)
+
+
+
+
 
 fixed_summary <- do.call(rbind, fixed_summary_list)
 fixed_summary %>% group_by(node) %>% summarize(max = max(rhat)) %>% print(n = 33)

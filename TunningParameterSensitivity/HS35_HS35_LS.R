@@ -44,10 +44,9 @@ prdX <- X[-idSampled,]
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
-obsMaxDist <- max(obsDistVec)
-obsMedDist <- median(obsDistVec)
-obsMinDist <- min(obsDistVec)
-
+obsMaxDist <- max(obsDistVec); obsMaxDist
+obsMedDist <- median(obsDistVec); obsMedDist
+obsMinDist <- min(obsDistVec); obsMinDist
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
