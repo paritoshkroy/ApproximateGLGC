@@ -22,8 +22,11 @@ nsite <- nrow(selected.sat.temps); nsite
 ####################################################################################
 apply(selected.sat.temps[,c("Lon","Lat")], 2, range)  # range of the spatial domain
 selected.sat.temps <- selected.sat.temps %>% 
-  mutate(scaledLon = Lon - mean(range(Lon))) %>%
-  mutate(scaledLat = Lat - mean(range(Lat)))
+  mutate(relocateLon = Lon - mean(range(Lon))) %>%
+  mutate(relocateLat = Lat - mean(range(Lat))) %>%
+  mutate(multiplier = max(max(relocateLon), max(relocateLat))) %>%
+  mutate(scaledLon = relocateLon/multiplier) %>%
+  mutate(scaledLat = relocateLat/multiplier)
 apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range)
 
 #####################################################################
@@ -88,7 +91,7 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25,
                           init = 1)
 elapsed_time <- cmdstan_fit$time()
