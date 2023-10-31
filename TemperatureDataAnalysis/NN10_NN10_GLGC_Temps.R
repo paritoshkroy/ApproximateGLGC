@@ -107,9 +107,8 @@ str(sampler_diag)
 
 ## Posterior summaries
 pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
-pars_true_df <- tibble(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
-fixed_summary <- inner_join(pars_true_df, fit_summary)
+fixed_summary <- fit_summary %>% filter(variable %in% pars)
 fixed_summary %>% print(digits = 3)
 
 ## Posterior draws
@@ -198,22 +197,22 @@ pred_summary <- tibble(
   post.q97.5 = apply(ypred_draws, 2, quantile97.5),
   y = prdY)
 pred_summary
-mean(pred_summary[,"y"]>pred_summary[,"post.q2.5"] & pred_summary[,"y"]<pred_summary[,"post.q97.5"])
 
 ## Computation for scoring rules
-
+## In the object PrdY there are 160 observations that are missing, to compute the scoring rules we ignore these cases
+id_full_missing <- which(is.na(prdY)); str(id_full_missing)
 library(scoringRules)
-ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
-logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs
-CRPS <- mean(crps_sample(y = prdY, dat = t(ypred_draws))); CRPS
+ES <- es_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,]); ES
+logs <- mean(logs_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,])); logs
+CRPS <- mean(crps_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,])); CRPS
 
-scores_df <- pred_summary %>% 
+scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   mutate(intervals = scoringutils::interval_score(true_values = y, lower = post.q2.5, upper = post.q50, interval_range = 0.95)) %>%
   mutate(btw = between(y,post.q2.5, post.q97.5)) %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NN10_NN10_GLGC_Temps") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HS50_HS50_GLGC") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
