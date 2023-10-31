@@ -133,15 +133,16 @@ data {
   int<lower=0> M;
   int<lower=0> P;
   vector[N] y;
-  matrix[N,P] X;
+  matrix[N, P] X;
   matrix[N,2] coords;
   vector[2] L;
   matrix[M,2] lambda;
   vector[P] mu_theta;
   matrix[P,P] V_theta;
+  real<lower=0> lambda_sigma;
+  real<lower=0> lambda_tau;
   real a;
   real b;
-  int<lower=0, upper=1> positive_skewness;
 }
 
 transformed data {
@@ -150,50 +151,32 @@ transformed data {
     H[,i] = eigenfunction(L, to_vector(lambda[i,]), coords);
   }
   cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
-  int skewness;
-  if(positive_skewness==0){
-    skewness = -1;
-    } else {
-      skewness = 1;
-    }
 }
 
 
 parameters{
   vector[P] theta_std;
-  real<lower = 0> abs_gamma;
-  real<lower = 0> sigma1;
-  real<lower = 0> sigma2;
+  real<lower = 0> sigma;
   real<lower = 0> tau;
-  real<lower = 0> ell1;
-  real<lower = 0> ell2;
-  vector[M] noise1;
-  vector[M] noise2;
+  real<lower = 0> ell;
+  vector[M] noise;
 }
 
 transformed parameters{
-  real gamma = skewness * abs_gamma;
-  // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
+  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
-  vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
-  vector[M] omega2 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma2), ell2, M)) .* noise2;
-  
+  vector[M] omega = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma), ell, M)) .* noise;
 }
 
 
 model {
-  vector[N] z1 = H * omega1;
-  vector[N] z2 = H * omega2;
+  vector[N] z = H * omega;
   theta_std ~ std_normal();
-  abs_gamma ~ std_normal();
-  sigma1 ~ std_normal();
-  sigma2 ~ std_normal();
-  tau ~ std_normal();
-  ell1 ~ inv_gamma(a,b);
-  ell2 ~ inv_gamma(a,b);
-  noise1 ~ std_normal();
-  noise2 ~ std_normal();
-  vector[N] mu = X * theta + gamma * exp(z1) + z2;
+  sigma ~ exponential(lambda_sigma);
+  tau ~ exponential(lambda_tau);
+  ell ~ inv_gamma(a,b);
+  noise ~ std_normal();
+  vector[N] mu = X * theta + z;
   y ~ normal(mu, tau);
 }
 

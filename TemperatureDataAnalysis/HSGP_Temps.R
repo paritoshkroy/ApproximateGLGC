@@ -45,10 +45,10 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
-m1 <- 22; m2 <- 22; mstar <- m1*m2
+m1 <- 42; m2 <- 42; mstar <- m1*m2
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- apply(xyRanges, 2, max); Lstar
-c <- c(1.5,1.5)
+c <- c(1.22,1.22)
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -65,8 +65,8 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 rm(obsDistMat)
 
 library(nleqslv)
@@ -74,14 +74,19 @@ ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), from = 0, to = uLimit)
 
-P <- 2
-mu_beta <- c(mean(obsY),rep(0,P))
-V_beta <- diag(c(2.5*var(obsY),rep(1,P)))
-input <- list(N = nsize, M = mstar, P = 2, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_beta = mu_beta, V_beta = V_beta, a = ab[1], b = ab[2])
+## Exponential prior for SD
+lambda_sigma <- -log(0.01)/1; lambda_sigma
+lambda_tau <- -log(0.01)/1; lambda_tau
+pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+
+P <- 3
+mu_theta <- c(mean(obsY),rep(0,P-1))
+V_theta <- diag(c(2.5*var(obsY),rep(1,P-1)))
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma = lambda_sigma, lambda_tau = lambda_tau)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSGP.stan")
+stan_file <- paste0(fpath,"StanFiles/HSGP_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()

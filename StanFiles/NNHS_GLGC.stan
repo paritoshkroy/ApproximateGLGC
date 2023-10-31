@@ -230,7 +230,6 @@ transformed parameters{
 
 model {
   vector[N] z1 = H * omega1;
-  
   theta_std ~ std_normal();
   abs_gamma ~ std_normal();
   ell1 ~ inv_gamma(a,b);

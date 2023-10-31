@@ -11,7 +11,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 2
+node <- 1
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -65,31 +65,38 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
+## Inverse Gamma for length scale
 library(nleqslv)
 ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
 
+## Exponential prior for SD
+lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
+lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+lambda_tau <- -log(0.01)/1; lambda_tau
+pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+
 head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], positive_skewness = 1)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 500,
+                          iter_sampling = 500,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

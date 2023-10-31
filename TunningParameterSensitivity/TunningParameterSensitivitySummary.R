@@ -94,22 +94,104 @@ scores_df <- scores_df %>%
   mutate(m2 = as.numeric(gsub(".*?([0-9]+).*", "\\1", y))) %>%
   mutate(Method = paste0(C1,C2)) %>%
   select(-x,-y) %>%
-  select(Method,m1,m2,LS,everything())
-
-scores_df %>% filter(Method == "HSHS")
-
+  select(Method,m1,m2,LS,everything()) %>%
+  replace_na(list(m1 = 0, m2 = 0))
+scores_df <- scores_df %>% filter(!(m1 == 25))
 library(gridExtra)
 grid.arrange(
-  scores_df %>% filter(Method == "NNNN" & LS >1) %>% ggplot(aes(x = LS, y = ES)) + geom_line(aes(col = factor(m1))) + ylim(40,85) + theme_bw() + theme(panel.grid = element_blank(), strip.background = element_blank(), strip.text = element_text(size = 12), legend.position = c(0.8,0.8), legend.title = element_blank()),
-  scores_df %>% filter(Method == "NNHS" & LS >1) %>% ggplot(aes(x = LS, y = ES)) + geom_line(aes(col = factor(m1))) + ylim(40,85) + theme_bw() + theme(panel.grid = element_blank(), strip.background = element_blank(), strip.text = element_text(size = 12), legend.position = c(0.8,0.8), legend.title = element_blank()),
-  scores_df %>% filter(Method == "HSHS" & LS >1) %>% ggplot(aes(x = LS, y = ES)) + geom_line(aes(col = factor(m1))) + ylim(40,85) + theme_bw() + theme(panel.grid = element_blank(), strip.background = element_blank(), strip.text = element_text(size = 12), legend.position = c(0.8,0.8), legend.title = element_blank()), ncol = 3)
+  scores_df %>% 
+    filter(Method %in% c("FullGLGC","NNNN") & LS >1) %>% 
+    ggplot(aes(x = LS, y = ES)) + 
+    geom_line(aes(col = factor(m1))) + 
+    ggtitle("NNNN") +
+    theme_bw() + 
+    theme(panel.grid = element_blank(), 
+          strip.background = element_blank(), 
+          strip.text = element_text(size = 12), 
+          legend.position = c(0.8,0.8), 
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5)),
+  
+  scores_df %>% 
+    filter(Method %in% c("FullGLGC","NNHS") & LS >1) %>% 
+    ggplot(aes(x = LS, y = ES)) + 
+    geom_line(aes(col = factor(m1))) + 
+    ggtitle("NNHS") +
+    theme_bw() + 
+    theme(panel.grid = element_blank(), 
+          strip.background = element_blank(), 
+          strip.text = element_text(size = 12), 
+          legend.position = c(0.8,0.8), 
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5)),
+  
+  scores_df %>% 
+    filter(Method %in% c("FullGLGC","HSHS") & LS >1) %>% 
+    ggplot(aes(x = LS, y = ES)) + 
+    geom_line(aes(col = factor(m1))) + 
+    ggtitle("HSHS") +
+    theme_bw() + 
+    theme(panel.grid = element_blank(), 
+          strip.background = element_blank(), 
+          strip.text = element_text(size = 12), 
+          legend.position = c(0.8,0.8), 
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5)), 
+  
+  ncol = 3)
 
+#### Logs
+grid.arrange(
+  scores_df %>% 
+    filter(Method %in% c("FullGLGC","NNNN") & LS >1) %>% 
+    ggplot(aes(x = LS, y = logs)) + 
+    geom_line(aes(col = factor(m1))) + 
+    ggtitle("NNNN") +
+    theme_bw() + 
+    theme(panel.grid = element_blank(), 
+          strip.background = element_blank(), 
+          strip.text = element_text(size = 12), 
+          legend.position = c(0.8,0.8), 
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5)),
+  
+  scores_df %>% 
+    filter(Method %in% c("FullGLGC","NNHS") & LS >1) %>% 
+    ggplot(aes(x = LS, y = logs)) + 
+    geom_line(aes(col = factor(m1))) + 
+    ggtitle("NNHS") +
+    theme_bw() + 
+    theme(panel.grid = element_blank(), 
+          strip.background = element_blank(), 
+          strip.text = element_text(size = 12), 
+          legend.position = c(0.8,0.8), 
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5)),
+  
+  scores_df %>% 
+    filter(Method %in% c("FullGLGC","HSHS") & LS >1) %>% 
+    ggplot(aes(x = LS, y = logs)) + 
+    geom_line(aes(col = factor(m1))) + 
+    ggtitle("HSHS") +
+    theme_bw() + 
+    theme(panel.grid = element_blank(), 
+          strip.background = element_blank(), 
+          strip.text = element_text(size = 12), 
+          legend.position = c(0.8,0.8), 
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5)), 
+  
+  ncol = 3)
 
-
+## Following indicates that to estimate ell of minimum 0.2 NN10NN10, NN10HS36 and HS36HS36 provide the same prediction accuracy
+scores_df %>% select(-RMSE) %>% mutate(`Elapsed Time` = `Elapsed Time`/3600) %>% filter(LS==2) %>% arrange(`Elapsed Time`)
+scores_df %>% select(-RMSE) %>% mutate(`Elapsed Time` = `Elapsed Time`/3600) %>% filter(LS==5) %>% arrange(`Elapsed Time`) %>% print(n=100)
+scores_df %>% select(-RMSE) %>% mutate(`Elapsed Time` = `Elapsed Time`/3600) %>% filter(LS==9) %>% arrange(`Elapsed Time`) %>% print(n=100)
 
 
 fixed_summary <- do.call(rbind, fixed_summary_list)
 fixed_summary %>% group_by(node) %>% summarize(max = max(rhat)) %>% print(n = 33)
+fixed_summary %>% filter(variable == "gamma") %>% filter(LS==2)
 
 ### CPOP
 cpop <- function(x,y){
