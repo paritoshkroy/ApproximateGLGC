@@ -93,12 +93,11 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 500,
+                          iter_sampling = 500,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
-                          step_size = 0.25,
-                          init = 1)
+                          step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
@@ -108,7 +107,7 @@ sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
 
 ## Posterior summaries
-pars <- c("beta[1]","beta[2]","beta[3]","sigma","ell","tau")
+pars <- c(paste0("theta[",1:P,"]"),"sigma","ell","tau")
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
 fixed_summary <- fit_summary %>% filter(variable %in% pars)
 fixed_summary %>% print(digits = 3)
@@ -171,18 +170,18 @@ zpred_summary <- tibble(
 head(zpred_summary)
 
 ## Compute the means
-post_beta <- as_tibble(draws_df) %>% select(starts_with("beta[")) %>% as.matrix() %>% unname(); str(post_beta)
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
 str(post_z)
 
 str(obsX)
-str(post_beta)
+str(post_theta)
 l <- 1
-obsXbeta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_beta[l,])); str(obsXbeta)
-prdXbeta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_beta[l,])); str(prdXbeta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
 
 post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
 str(post_zpred)
-ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXbeta[l,] + post_zpred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
+ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXtheta[l,] + post_zpred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
 str(ypred_draws)
 
 pred_summary <- tibble(
@@ -199,7 +198,6 @@ head(pred_summary)
 id_full_missing <- which(is.na(prdY)); str(id_full_missing)
 library(scoringRules)
 ES <- es_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,]); ES
-VS0.25 <- vs_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,], p = 0.25); VS0.25
 logs <- mean(logs_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,])); logs
 CRPS <- mean(crps_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,])); CRPS
 
@@ -209,8 +207,8 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, VS0.25 = VS0.25, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSGP") %>%
-  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,VS0.25,logs,`Elapsed Time`)
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSGP") %>%
+  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
 save(elapsed_time, fixed_summary, draws_df, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSGP_Temps.RData"))
