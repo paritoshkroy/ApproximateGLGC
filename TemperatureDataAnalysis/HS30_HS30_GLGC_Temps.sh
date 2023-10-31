@@ -2,7 +2,7 @@
 #SBATCH --account=def-aschmidt  # replace this with your own account
 #SBATCH --ntasks=16              # number of processes
 #SBATCH --mem-per-cpu=16000M      # memory; default unit is megabytes
-#SBATCH --time=12:00:00         # time (HH:MM:SS)
+#SBATCH --time=24:00:00         # time (HH:MM:SS)
 #SBATCH --output=/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/TemperatureDataAnalysis/%x-%j.out
 
 # Modules
@@ -15,4 +15,4 @@ module load r/4.2.1
 # If all processes are allocated on the same node, NODESLIST contains : node1 node1 node1 node1
 # Cut the domain name and keep only the node name
 export NODESLIST=$(echo $(srun hostname | cut -f 1 -d '.'))
-R -f HS50_HS50_GLGC_Temps.R
+R -f HS30_HS30_GLGC_Temps.R

@@ -12,7 +12,7 @@ fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-load(paste0(fpath,"/TemperatureDataAnalysis/SelectedStatelliteTemps.rda"))
+load(paste0(fpath,"/TemperatureDataAnalysis/SelectedData/SelectedStatelliteTemps.rda"))
 head(selected.sat.temps)
 table(is.na(selected.sat.temps$MaskTemp))  # FALSE are the locations to be used for modeling
 nsite <- nrow(selected.sat.temps); nsite
@@ -66,7 +66,7 @@ obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 rm(obsDistMat)
 
 ## Inverse Gamma for length scale
