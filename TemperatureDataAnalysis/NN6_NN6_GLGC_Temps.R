@@ -55,7 +55,7 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
+nNeighbors <- 6
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -74,7 +74,7 @@ pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 library(nleqslv)
 ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 
 P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1))
@@ -89,6 +89,7 @@ stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
+
 cmdstan_fit <- mod$sample(data = input,
                           chains = 4,
                           parallel_chains = 4,
@@ -143,7 +144,7 @@ z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TemperatureDataAnalysis/NN10_NN10_GLGC_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TemperatureDataAnalysis/NN6_NN6_GLGC_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -212,8 +213,8 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NN10_NN10_GLGC") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NN6_NN6_GLGC") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, sampler_diag, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NN10_NN10_GLGC_Temps.RData"))
+save(elapsed_time, sampler_diag, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NN6_NN6_GLGC_Temps.RData"))

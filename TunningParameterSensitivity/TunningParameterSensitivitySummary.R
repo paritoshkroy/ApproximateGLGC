@@ -9,6 +9,7 @@ library(coda)
 library(fields)
 library(lubridate)
 library(scoringRules)
+load("./TunningParameterSensitivity/TunningParameterSensitivitySummary.RData")
 ###########################################################################
 ### Gaussian Model
 ###########################################################################
@@ -29,11 +30,12 @@ fixed_summary %>% filter(variable %in% "gamma") %>% arrange(LS)
 fixed_summary %>% arrange(LS == 1)
 
 fixed_summary %>% 
-  filter(LS == 1) %>%
+  filter(LS == 10) %>%
   filter(variable %in% "ell1") %>% 
   ggplot(aes(x = Method)) + 
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25) +
   geom_point(aes(y = `50%`)) +
+  geom_hline(yintercept = 0.9) +
   facet_wrap(~LS, nrow = 2, labeller = label_bquote("\u2113"[1]~"="~.(LS))) +
   theme_bw() +
   theme(strip.background = element_blank(),
@@ -53,16 +55,16 @@ fixed_summary %>%
 
 fixed_summary %>% 
   filter(variable %in% "gamma") %>% 
-  filter(LS == 2) %>%
+  filter(LS == 7) %>%
   ggplot(aes(x = Method)) + 
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25) +
   geom_point(aes(y = `50%`)) +
+  geom_hline(yintercept = 1.5) +
   facet_wrap(~LS, nrow = 2, labeller = label_bquote(gamma~"="~.(LS))) +
   theme_bw() +
   theme(strip.background = element_blank(),
         panel.grid = element_blank(),
         strip.text = element_text(size = 12))
-
 
 fixed_summary %>% 
   filter(variable %in% "theta[1]") %>% 
@@ -249,3 +251,5 @@ ggplot(data = mypred, aes(x = date)) +
   theme(strip.background = element_blank(),
         panel.grid = element_blank(),
         strip.text = element_text(size = 12))
+
+save(scores_list, fixed_summary_list, file = "TunningParameterSensitivitySummary.RData")
