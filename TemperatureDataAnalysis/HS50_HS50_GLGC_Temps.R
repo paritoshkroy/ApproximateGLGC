@@ -45,10 +45,10 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
-m1 <- 30; m2 <- 30; mstar <- m1*m2
+m1 <- 50; m2 <- 50; mstar <- m1*m2
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- apply(xyRanges, 2, max); Lstar
-c <- c(1.5,1.5)
+c <- c(1.45,1.45)
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -59,30 +59,40 @@ head(lambda)
 #############################################################################
 # Prior elicitation
 #############################################################################
+#############################################################################
+# Prior elicitation
+#############################################################################
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
-lLimit <- quantile(obsDistVec, prob = 0); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.5); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 rm(obsDistMat)
 
+## Inverse Gamma for length scale
 library(nleqslv)
-ab <- nleqslv(c(2,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), from = 0, to = uLimit)
-summary(rinvgamma(n = 9000, shape = ab[1], scale = ab[2]))
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
 
+## Exponential prior for SD
+lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
+lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+lambda_tau <- -log(0.01)/1; lambda_tau
+pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+
+head(obsX)
 P <- 3
-mu_theta <- c(mean(obsY),rep(0,P-1))
-V_theta <- diag(c(10,rep(1,P-1)))
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], positive_skewness = 0)
+mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
+V_theta <- diag(c(10,rep(1,P-1))); V_theta
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -161,7 +171,7 @@ z_summary <- tibble(post.mean = apply(post_z, 2, mean),
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HS30HS30_GLGC_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HS50_HS50_GLGC_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -235,9 +245,9 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HS30HS30_GLGC") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HS50_HS50_GLGC") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HS30HS30_GLGC_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HS50_HS50_GLGC_Temps.RData"))
 
