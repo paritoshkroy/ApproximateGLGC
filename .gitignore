@@ -17,6 +17,8 @@ TunningParameterSensitivity/*.RData
 ComparingApproximateMethods/*.RData
 ExactVsApproximateMethods/*.RData
 TemperatureDataAnalysis/*.RData
+USTempDataAnalysis/*.RData
+MeuseDataAnalysis/*.RData
 *.png
 *.jpg
 *.jpeg

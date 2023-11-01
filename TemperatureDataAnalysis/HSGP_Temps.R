@@ -12,7 +12,7 @@ fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-load(paste0(fpath,"./TemperatureDataAnalysis/SelectedStatelliteTemps.rda"))
+load(paste0(fpath,"./TemperatureDataAnalysis/SelectedData/SelectedStatelliteTemps.rda"))
 head(selected.sat.temps)
 table(is.na(selected.sat.temps$MaskTemp))  # FALSE are the locations to be used for modeling
 nsite <- nrow(selected.sat.temps); nsite
@@ -27,6 +27,7 @@ selected.sat.temps <- selected.sat.temps %>%
   mutate(multiplier = max(max(relocateLon), max(relocateLat))) %>%
   mutate(scaledLon = relocateLon/multiplier) %>%
   mutate(scaledLat = relocateLat/multiplier)
+selected.sat.temps %>% distinct(multiplier)
 apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range)
 
 #####################################################################
@@ -63,11 +64,12 @@ obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
-obsMedDist <- median(obsDistVec)
-obsMinDist <- min(obsDistVec)
+obsMedDist <- median(obsDistVec); obsMedDist
+obsMinDist <- min(obsDistVec); obsMinDist
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 rm(obsDistMat)
+quantile(obsDistVec, probs = c(0.01,0.05,0.25,0.5,0.75,0.95,0.99))
 
 library(nleqslv)
 ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x

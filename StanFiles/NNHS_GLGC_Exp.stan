@@ -227,11 +227,11 @@ parameters{
 transformed parameters{
   real gamma = skewness * abs_gamma;
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
-  vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
+  vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1; //bigO(m1*m2)
 }
 
 model {
-  vector[N] z1 = H * omega1;
+  vector[N] z1 = H * omega1; //bigO(N*m1*m2)
   theta_std ~ std_normal();
   abs_gamma ~ std_normal();
   sigma1 ~ exponential(lambda_sigma1);
@@ -241,7 +241,7 @@ model {
   ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();
   vector[N] mu = X * theta + gamma * exp(z1);
-  y ~ vecchia_matern32(mu, square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
+  y ~ vecchia_matern32(mu, square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K); //bigO(Nm)
 }
 
 generated quantities {

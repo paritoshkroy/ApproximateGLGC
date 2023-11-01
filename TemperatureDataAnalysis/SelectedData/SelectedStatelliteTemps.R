@@ -14,7 +14,7 @@ source(paste0(fpath,"Rutilities/utility_functions.R"))
 ##########################################################################
 ## Load and cropped the original data set to get the data for our analysis
 ##########################################################################
-load(paste0(fpath,"./TemperatureDataAnalysis/AllSatelliteTemps.RData"))
+load(paste0(fpath,"./TemperatureDataAnalysis/SelectedData/AllSatelliteTemps.RData"))
 head(all.sat.temps)
 table(is.na(all.sat.temps$MaskTemp))  # FALSE are training data
 
@@ -53,7 +53,7 @@ idMissing <- which(is.na(selected.sat.temps$TrueTemp))
 length(idMissing)
 idNotMissing <- which(!is.na(selected.sat.temps$TrueTemp))
 length(idNotMissing)
-nsize <- 3000
+nsize <- 1000 #3000
 set.seed(1)
 idSampled <- sample(idNotMissing, size = nsize, replace = FALSE) 
 length(idSampled)
@@ -77,4 +77,4 @@ selected.sat.temps$MaskTemp[-idSampled] <- NA
 selected.sat.temps <- selected.sat.temps %>% select(Lon,Lat,MaskTemp,TrueTemp)
 table(is.na(selected.sat.temps$MaskTemp)) ## FALSE are the data to be used in  model fitting
 nsite
-save(selected.sat.temps, coords, scaled.coords, file = paste0(fpath,"./TemperatureDataAnalysis/SelectedStatelliteTemps.rda"))
+save(selected.sat.temps, coords, scaled.coords, file = paste0(fpath,"./TemperatureDataAnalysis/SelectedData/SelectedStatelliteTemps.rda"))

@@ -176,15 +176,15 @@ parameters{
 
 transformed parameters{
   real gamma = skewness * abs_gamma;
-  vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
-  vector[M] omega2 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma2), ell2, M)) .* noise2;
+  vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1; //bigO(m)
+  vector[M] omega2 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma2), ell2, M)) .* noise2; //bigO(m)
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
 }
 
 
 model {
-  vector[N] z1 = H * omega1;
-  vector[N] z2 = H * omega2;
+  vector[N] z1 = H * omega1; //bigO(Nm)
+  vector[N] z2 = H * omega2; //bigO(Nm)
   
   theta_std ~ std_normal();
   abs_gamma ~ std_normal();
@@ -196,7 +196,7 @@ model {
   noise1 ~ std_normal();
   noise2 ~ std_normal();
   vector[N] mu = X * theta + gamma * exp(z1) + z2;
-  y ~ normal(mu, tau);
+  y ~ normal(mu, tau); //bigO(n)
 }
 
 generated quantities {

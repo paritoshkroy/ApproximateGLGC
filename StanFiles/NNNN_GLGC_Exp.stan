@@ -182,7 +182,7 @@ transformed parameters{
 }
 
 model {
-  vector[N] z1 = latent_nngp_matern32_stuff(noise1, square(sigma1), ell1, site2neiDist, neiDistMat, neiID, N, K);
+  vector[N] z1 = latent_nngp_matern32_stuff(noise1, square(sigma1), ell1, site2neiDist, neiDistMat, neiID, N, K); //bigO(Nm^3)
   theta_std ~ std_normal();
   abs_gamma ~ std_normal();
   sigma1 ~ exponential(lambda_sigma1);
@@ -192,7 +192,7 @@ model {
   ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();
   vector[N] mu = X * theta + gamma * exp(z1);
-  y ~ vecchia_matern32(mu, square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
+  y ~ vecchia_matern32(mu, square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K); //bigO(Nm^3)
 }
 
 generated quantities {
