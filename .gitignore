@@ -19,6 +19,7 @@ ExactVsApproximateMethods/*.RData
 TemperatureDataAnalysis/*.RData
 SSTempDataAnalysis/*.RData
 MeuseDataAnalysis/*.RData
+MexicoGulfSST/*
 *.png
 *.jpg
 *.jpeg
