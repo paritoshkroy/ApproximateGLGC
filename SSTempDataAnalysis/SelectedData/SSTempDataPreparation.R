@@ -72,5 +72,5 @@ scaled.coords <- eastern_msst %>% select(relocateLon,relocateLat) %>% as.matrix(
 distMat <- fields::rdist(coords)
 distVec <- distMat[lower.tri(distMat, diag = FALSE)]
 
-save(eastern_msst, coords, scaled.coords, file = paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
+save(idSampled, eastern_msst, coords, scaled.coords, file = paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
 
