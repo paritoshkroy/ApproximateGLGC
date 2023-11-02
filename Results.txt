@@ -1,0 +1,23 @@
+## Temperature Data Analysis
+Method           MAE  RMSE   CVG  CRPS    IS    ES  logs `Elapsed Time`
+HS22_HS22_GLGC 0.947  1.16 0.942 0.640  1.53  77.7  1.56           700.
+HS36_HS36_GLGC 0.911  1.10 0.940 0.595  1.43  73.2  1.46         10929.
+HS42_HS42_GLGC 0.904  1.09 0.939 0.585  1.43  72.2  1.44          7595.
+NN6_NN6_GLGC   0.901  1.10 0.944 0.579  1.48  71.9  1.41          6398.
+NN10_NN10_GLGC 0.899  1.09 0.940 0.577  1.47  71.6  1.41         12306.
+
+Method          variable   mean     sd  `50%`  `2.5%` `97.5%`  rhat ess_bulk ess_tail
+HS22_HS22_GLGC   gamma    -0.504 0.195  -0.477  -0.951  -0.189  1.00     959.    1453.
+HS36_HS36_GLGC   gamma    -2.42  0.564  -2.43   -3.47   -1.23   1.01     185.     139.
+HS42_HS42_GLGC   gamma    -2.60  0.511  -2.58   -3.63   -1.65   1.02     210.     209.
+NN6_NN6_GLGC     gamma    -2.66  0.517  -2.65   -3.72   -1.70   1.03     162.     491.
+NN10_NN10_GLGC   gamma    -2.56  0.496  -2.55   -3.54   -1.62   1.01     159.     340.
+
+
+Method          variable   mean     sd  `50%`  `2.5%` `97.5%`  rhat ess_bulk ess_tail
+HS22_HS22_GLGC   theta[1] 42.8    0.261  42.8   42.2    43.3    1.00    1334.    1918.
+HS36_HS36_GLGC   theta[1] 44.6    0.567  44.6   43.4    45.6    1.01     184.     159.
+HS42_HS42_GLGC   theta[1] 44.7    0.520  44.7   43.8    45.8    1.01     221.     284.
+NN6_NN6_GLGC     theta[1] 44.7    0.572  44.7   43.7    45.9    1.02     181.     709.
+NN10_NN10_GLGC   theta[1] 44.7    0.525  44.7   43.7    45.7    1.01     186.     518.
+

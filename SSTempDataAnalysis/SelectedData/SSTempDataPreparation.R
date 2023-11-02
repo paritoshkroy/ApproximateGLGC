@@ -65,12 +65,22 @@ apply(eastern_msst[,c("lon","lat")], 2, range)  # range of the spatial domain
 eastern_msst <- eastern_msst %>% 
   mutate(relocateLon = lon - mean(range(lon))) %>%
   mutate(relocateLat = lat - mean(range(lat)))
+
 apply(eastern_msst[,c("relocateLon","relocateLat")], 2, range)
 
 coords <- eastern_msst %>% select(lon,lat) %>% as.matrix() %>% unname()
 scaled.coords <- eastern_msst %>% select(relocateLon,relocateLat) %>% as.matrix() %>% unname()
 distMat <- fields::rdist(coords)
 distVec <- distMat[lower.tri(distMat, diag = FALSE)]
+abline(v = quantile(distVec, probs = seq(0,1,l=21)), col = 2)
+quantile(distVec, probs = seq(0,1,l=21))
+
+## For minimum m1 and m2 for the HSGP
+minimum_identifiable_lscale <- 1.22; minimum_identifiable_lscale
+S <- as.vector(apply(apply(eastern_msst[,c("relocateLon","relocateLat")], 2, range),2,max)); S
+m1 <- ceiling(3.42 * 1.2/(minimum_identifiable_lscale/S[1])); m1
+m2 <- ceiling(3.42 * 1.2/(minimum_identifiable_lscale/S[2])); m2
+m1*m2
 
 save(idSampled, eastern_msst, coords, scaled.coords, file = paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
 

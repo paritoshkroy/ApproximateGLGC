@@ -50,7 +50,7 @@ obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+lLimit <- quantile(obsDistVec, prob = 0.05); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
