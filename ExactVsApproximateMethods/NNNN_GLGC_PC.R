@@ -21,6 +21,10 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
+obsZ1 <- z1[idSampled]
+obsZ2 <- z2[idSampled]
+prdZ1 <- z1[-idSampled]
+prdZ2 <- z2[-idSampled]
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -28,6 +32,11 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
+
+# Constants
+lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+rm(obsDistMat)
 
 ################################################################################
 ## NNGP preparation
@@ -39,14 +48,22 @@ str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
 obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
-obsZ1 <- z1[idSampled][neiMatInfo$ord]
-obsZ2 <- z2[idSampled][neiMatInfo$ord]
+obsZ1 <- obsZ1[neiMatInfo$ord]
+obsZ2 <- obsZ2[neiMatInfo$ord]
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
-rm(obsDistMat)
+lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
+uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
 
+library(nleqslv)
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
+summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
+
+## Exponential and PC prior
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
 lambda_tau <- -log(0.01)/1; lambda_tau
@@ -54,7 +71,9 @@ pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
 lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
 pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
+summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
 
+## Stan input
 P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1))
 V_theta <- diag(c(10,rep(1,P-1)))
@@ -71,10 +90,10 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
@@ -116,7 +135,7 @@ for(l in 1:size_post_samples){
 }
 str(post_z1)
 
-z1_summary <- tibble(z1 = z1[idSampled],
+z1_summary <- tibble(z1 = obsZ1,
                      post.mean = apply(post_z1, 2, mean),
                      post.sd = apply(post_z1, 2, sd),
                      post.q2.5 = apply(post_z1, 2, quantile2.5),
