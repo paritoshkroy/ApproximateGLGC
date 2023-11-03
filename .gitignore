@@ -20,6 +20,7 @@ TemperatureDataAnalysis/*.RData
 SSTempDataAnalysis/*.RData
 MeuseDataAnalysis/*.RData
 MexicoGulfSST/*
+PriorSensitivity/*.RData
 *.png
 *.jpg
 *.jpeg
