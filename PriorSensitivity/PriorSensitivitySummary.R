@@ -31,9 +31,8 @@ fixed_summary <- fixed_summary %>%
   separate(y, into = c("x","y"), sep = "_") %>% 
   rename(Prior = y) %>% 
   select(-x) %>% 
-  mutate(Method = recode(Method, Full=1,NNNN=2,NNHS=3,HSHS=4)) %>%
-  mutate(Prior = recode(Prior, PC=2,Exp=3)) %>% 
-  replace_na(list(Prior = 1))
+  mutate(Method = recode(Method, Full = 1, NNNN = 2, NNHS = 3, HSHS = 4)) %>%
+  mutate(Prior = recode(Prior, HN = 1, PC = 2, Exp = 3)) 
 
 ggplot(fixed_summary, aes(x = Prior)) + 
   geom_errorbar(aes(ymin=`2.5%`,ymax=`97.5%`)) + 
