@@ -13,6 +13,7 @@
 *.qmd
 *.Rmd
 *.md
+*.pdf
 TunningParameterSensitivity/*.RData
 ComparingApproximateMethods/*.RData
 ExactVsApproximateMethods/*.RData

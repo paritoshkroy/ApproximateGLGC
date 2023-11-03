@@ -31,11 +31,24 @@ fixed_summary <- fixed_summary %>%
   separate(y, into = c("x","y"), sep = "_") %>% 
   rename(Prior = y) %>% 
   select(-x) %>% 
-  mutate(Method = recode(Method, Full = 1, NNNN = 2, NNHS = 3, HSHS = 4)) %>%
+  mutate(Method = recode(Method, NNNN = 1, NNHS = 2, HSHS = 3)) %>%
   mutate(Prior = recode(Prior, HN = 1, PC = 2, Exp = 3)) 
 
-ggplot(fixed_summary, aes(x = Prior)) + 
-  geom_errorbar(aes(ymin=`2.5%`,ymax=`97.5%`)) + 
+fixed_summary <- fixed_summary %>% 
+  mutate(Pars = recode(variable, `theta[1]`=1, `theta[2]` = 2, `theta[3]` = 3, gamma = 4, sigma1 = 5, sigma2 = 6, ell1 = 7, ell2 = 8, tau = 9)) %>%
+  mutate(Pars = factor(Pars, labels = c("theta[1]","theta[2]","theta[3]","gamma","sigma[1]","sigma[2]","\u2113[1]","\u2113[2]","tau")))
+fixed_summary <- fixed_summary %>% mutate(Prior = factor(Prior, labels = c("Prior Set 1", "Prior Set 2", "Prior Set 3"))) #%>% mutate(Method = factor(Method, labels = c("NNNN","NNHS","HSHS")))
+
+ggplot(fixed_summary, aes(x = Prior, group = Method)) + 
+  geom_errorbar(aes(ymin=`2.5%`,ymax=`97.5%`), width = 0.1, linewidth = 0.5) + 
   geom_point(aes(y = `50%`)) + 
-  facet_wrap(Method~variable)
+  geom_hline(aes(yintercept = true), linetype = "dotted", linewidth = 0.5) +
+  facet_wrap(~Pars, scales = "free_y", labeller = label_parsed) +
+  theme_bw() +
+  xlab("") +
+  ylab("Posterior median (95% CI)") +
+  theme(panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 12))
+ggsave(filename = "PriorSensitivity.png", height = 5, width = 9)
 
