@@ -28,6 +28,7 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
+rm(obsDistMat)
 
 ################################################################################
 ## NNGP preparation
@@ -61,24 +62,32 @@ head(lambda)
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
-rm(obsDistMat)
+lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
+uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
 
+library(nleqslv)
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
+summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
+
+## Exponential and PC prior
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
 lambda_tau <- -log(0.01)/1; lambda_tau
 pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
+lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
+pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
+summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
 
-library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
-ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
-
+## Stan input
 head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1))
 V_theta <- diag(c(10,rep(1,P-1)))
 # Keep in mind that the data should be ordered following nearest neighbor settings
-input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], positive_skewness = 1)
+input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
@@ -87,13 +96,12 @@ mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
-                          seed = 123,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time

@@ -67,6 +67,7 @@ ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
 
+## Stan input
 head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
