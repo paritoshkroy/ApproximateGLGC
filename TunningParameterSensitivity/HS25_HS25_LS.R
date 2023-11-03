@@ -11,7 +11,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 2
+node <- 1
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -47,15 +47,15 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
-
+quantile(obsDistVec, prob = seq(0.01,1,l=21))
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 25; m2 <- 25; mstar <- m1*m2
+m1 <- m1[node]; m2 <- m2[node]; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-c <- c(1.5,1.5)
+c <- c(c1[node],c2[node])
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -65,13 +65,15 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+#lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+#uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+lLimit <- min(obsDistVec); lLimit
+uLimit <- 0.5*max(obsDistVec); uLimit
 
 library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 
 head(obsX)
 P <- 3
@@ -88,8 +90,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 100,
+                          iter_sampling = 100,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

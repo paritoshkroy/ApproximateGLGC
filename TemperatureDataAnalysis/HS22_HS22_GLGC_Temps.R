@@ -45,6 +45,20 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
+obsDistMat <- fields::rdist(obsCoords)
+str(obsDistMat)
+obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
+obsMaxDist <- max(obsDistVec)
+obsMedDist <- median(obsDistVec)
+obsMinDist <- min(obsDistVec); obsMinDist
+rm(obsDistMat)
+quantile(obsDistVec, prob = seq(0,0.5,l=21))
+hist(obsDistVec)
+abline(v = quantile(obsDistVec, prob = seq(0,1,l=51)), col = 2)
+
+## Targets to estimate minimum length scale of 0.1
+ceiling(3.42*1.2/0.1)
+
 m1 <- 22; m2 <- 22; mstar <- m1*m2
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- apply(xyRanges, 2, max); Lstar
@@ -59,13 +73,6 @@ head(lambda)
 #############################################################################
 # Prior elicitation
 #############################################################################
-obsDistMat <- fields::rdist(obsCoords)
-str(obsDistMat)
-obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
-obsMaxDist <- max(obsDistVec)
-obsMedDist <- median(obsDistVec)
-obsMinDist <- min(obsDistVec)
-rm(obsDistMat)
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit

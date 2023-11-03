@@ -28,7 +28,7 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
-
+rm(obsDistMat)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
@@ -48,18 +48,22 @@ head(lambda)
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
+uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
 
 library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
+summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
 
 head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], positive_skewness = 1)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1)
 str(input)
+
 
 library(cmdstanr)
 stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC.stan")
@@ -69,8 +73,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 100,
-                          iter_sampling = 100,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

@@ -48,7 +48,7 @@ prdX <- cbind(1,prdCoords); str(prdX)
 m1 <- 42; m2 <- 42; mstar <- m1*m2
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- apply(xyRanges, 2, max); Lstar
-c <- c(1.22,1.22)
+c <- c(1.20,1.20)
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -67,13 +67,15 @@ obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+lLimit <- min(obsDistVec); lLimit
+uLimit <- 0.5*max(obsDistVec)/2.75; uLimit
 rm(obsDistMat)
 
 ## Inverse Gamma for length scale
 library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 
 ## Exponential prior for SD
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
@@ -96,8 +98,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 100,
+                          iter_sampling = 100,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

@@ -39,8 +39,4 @@ RCC_df %>%
   ggplot(aes(x = lscale, y = `Relative Complexity`, group = Method)) + geom_line(aes(col = Method))
 
 
-#Method           MAE  RMSE   CVG  CRPS    IS    ES  logs `Elapsed Time`
-#HS22_HS22_GLGC 0.849 0.920 0.958 0.513  1.27  53.8  1.34          3856.
-#HS42_HS42_GLGC 0.759 0.770 0.948 0.415  1.05  45.2  1.10         24019.
-#NN6_NN6_GLGC   0.742 0.743 0.953 0.396  1.07  43.3  1.04         62816.
 

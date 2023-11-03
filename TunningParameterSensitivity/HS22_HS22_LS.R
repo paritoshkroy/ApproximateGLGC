@@ -11,7 +11,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 1
+node <- 2
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -55,7 +55,7 @@ xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
 m1 <- 22; m2 <- 22; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-c <- c(1.5,1.5)
+c <- c(1.2,1.2)
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -66,13 +66,15 @@ head(lambda)
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+lLimit <- min(obsDistVec); lLimit
+uLimit <- 0.5*max(obsDistVec)/2.75; uLimit
 
 ## Inverse Gamma for length scale
 library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 
 ## Exponential prior for SD
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
@@ -95,8 +97,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

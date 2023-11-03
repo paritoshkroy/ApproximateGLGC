@@ -39,8 +39,18 @@ set.seed(NULL)
 #plot(density(y[idSampled]))
 #boxplot(y[idSampled])
 
+## Settings for HSGP following m = 3.42*c/(ell/S) with c>= 1.2
+3.42*1.22/0.1
+3.42*1.25/0.2
+3.42*1.50/0.3
+3.42*1.50/0.4
+c1 <- c(1.22,1.25,rep(1.5,8)); c1
+c2 <- c(1.22,1.25,rep(1.5,8)); c2
+m1 <- c(42,23,rep(22,8)); m1
+m2 <- c(42,23,rep(22,8)); m2
+
 obj_all <- ls()
-obj_keep <- c("idSampled", "y", "z1", "z2", "X", "theta", "sigma1", "sigma2", "lscale1", "lscale2", "tau", "coords", "gamma", "nsize")
+obj_keep <- c("idSampled", "y", "z1", "z2", "X", "theta", "sigma1", "sigma2", "lscale1", "lscale2", "tau", "coords", "gamma", "nsize", "m1", "m2", "c1", "c2")
 obj_drop <- obj_all[!obj_all %in% c(obj_prev, obj_keep)]
 rm(list = obj_drop)
 gc()

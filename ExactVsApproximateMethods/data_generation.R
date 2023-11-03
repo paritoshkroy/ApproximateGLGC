@@ -15,8 +15,8 @@ sigma1 <- 1
 sigma2 <- 1
 sigma1sq <- sigma1^2
 sigma2sq <- sigma2^2
-lscale1 <- sqrt(2)/2
-lscale2 <- sqrt(2)/2
+lscale1 <- 0.5
+lscale2 <- 0.5
 tau <- 0.5
 tausq <- tau^2
 gamma <- 1.5
