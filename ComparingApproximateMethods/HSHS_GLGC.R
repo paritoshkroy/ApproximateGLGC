@@ -11,7 +11,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 1
+node <- 2
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 
 ##########################################################################
@@ -68,13 +68,13 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
-lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
-uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+#lLimit <- min(obsDistVec); lLimit # Practical range should not be lower than min distance
+#uLimit <- max(obsDistVec); uLimit # Practical range should not be greater than max distance
 
 library(nleqslv)
-ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))

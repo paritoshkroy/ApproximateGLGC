@@ -29,25 +29,41 @@ fixed_summary %>% filter(variable %in% "ell2") %>% arrange(LS)
 fixed_summary %>% filter(variable %in% "gamma") %>% arrange(LS)
 fixed_summary %>% arrange(LS == 1)
 
+fixed_summary <- fixed_summary %>% separate(Method, into = c("x","y"), sep = "_") %>% 
+  mutate(x = recode(x, Full="Full0")) %>% 
+  mutate(y = recode(y, GLGC="GLGC0")) %>%
+  mutate(C1 = gsub("[^A-Za-z]","",x)) %>%
+  mutate(C2 = gsub("[^A-Za-z]","",y)) %>%
+  mutate(m1 = as.numeric(gsub(".*?([0-9]+).*", "\\1", x))) %>%
+  mutate(m2 = as.numeric(gsub(".*?([0-9]+).*", "\\1", y))) %>%
+  mutate(Method = paste0(C1,C2)) %>%
+  select(-x,-y) %>%
+  select(Method,m1,m2,LS,everything()) %>%
+  mutate(ellfactor = factor(LS, labels = seq(0.1,1,l=10))) %>%
+  mutate(m1factor = factor(m1, labels = c("Full",sort(unique(m1))[-1]))) %>%
+  mutate(m2factor = factor(m2, labels = c("Full",sort(unique(m2))[-1])))
+
 fixed_summary %>% 
-  filter(LS == 10) %>%
-  filter(variable %in% "ell1") %>% 
-  ggplot(aes(x = Method)) + 
-  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25) +
-  geom_point(aes(y = `50%`)) +
-  geom_hline(yintercept = 0.9) +
-  facet_wrap(~LS, nrow = 2, labeller = label_bquote("\u2113"[1]~"="~.(LS))) +
+  filter(variable %in% "ell2") %>% 
+  ggplot(aes(x = ellfactor, group = m1factor)) + 
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`, color = m1factor), 
+                position=position_dodge(0.5), stat="identity", 
+                width = 0.25) +
+  facet_wrap(~Method, nrow = 2) +
+  labs(x = bquote("\u2113"[2])) +
   theme_bw() +
   theme(strip.background = element_blank(),
         panel.grid = element_blank(),
         strip.text = element_text(size = 12))
 
+
 fixed_summary %>% 
   filter(variable %in% "ell2") %>% 
-  ggplot(aes(x = Method)) + 
-  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25) +
-  geom_point(aes(y = `50%`)) +
-  facet_wrap(~LS, nrow = 2, labeller = label_bquote("\u2113"[2]~"="~.(LS))) +
+  ggplot(aes(x = factor(LS), group = Method)) + 
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`, color = Method), 
+                position=position_dodge(0.5), stat="identity", 
+                width = 0.25) +
+  #facet_wrap(~LS, nrow = 2, labeller = label_bquote("\u2113"[2]~"="~.(LS))) +
   theme_bw() +
   theme(strip.background = element_blank(),
         panel.grid = element_blank(),
