@@ -37,11 +37,11 @@ fixed_summary <- fixed_summary %>%
 fixed_summary <- fixed_summary %>% 
   mutate(Pars = recode(variable, `theta[1]`=1, `theta[2]` = 2, `theta[3]` = 3, gamma = 4, sigma1 = 5, sigma2 = 6, ell1 = 7, ell2 = 8, tau = 9)) %>%
   mutate(Pars = factor(Pars, labels = c("theta[1]","theta[2]","theta[3]","gamma","sigma[1]","sigma[2]","\u2113[1]","\u2113[2]","tau")))
-fixed_summary <- fixed_summary %>% mutate(Prior = factor(Prior, labels = c("Prior Set 1", "Prior Set 2", "Prior Set 3"))) #%>% mutate(Method = factor(Method, labels = c("NNNN","NNHS","HSHS")))
+fixed_summary <- fixed_summary %>% mutate(Prior = factor(Prior, labels = c("Prior Set 1", "Prior Set 2", "Prior Set 3"))) %>% mutate(Method = factor(Method, labels = c("NNNN","NNHS","HSHS")))
 
-ggplot(fixed_summary, aes(x = Prior, group = Method)) + 
-  geom_errorbar(aes(ymin=`2.5%`,ymax=`97.5%`), width = 0.1, linewidth = 0.5) + 
-  geom_point(aes(y = `50%`)) + 
+ggplot(fixed_summary, aes(x = Method, group = Prior)) + 
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`, col = Prior), width = 0.25,
+                position=position_dodge(0.5), stat="identity") + 
   geom_hline(aes(yintercept = true), linetype = "dotted", linewidth = 0.5) +
   facet_wrap(~Pars, scales = "free_y", labeller = label_parsed) +
   theme_bw() +
@@ -51,4 +51,8 @@ ggplot(fixed_summary, aes(x = Prior, group = Method)) +
         strip.background = element_blank(),
         strip.text = element_text(size = 12))
 ggsave(filename = "PriorSensitivity.png", height = 5, width = 9)
+
+library(tidyverse)
+fixed_summary %>% group_by(Method,Prior) %>% summarise(`Elapsed Time` = min(`Elapsed Time (in minutes)`)) %>%  arrange(`Elapsed Time`)
+
 

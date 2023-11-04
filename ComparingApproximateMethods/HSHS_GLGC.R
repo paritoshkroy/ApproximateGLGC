@@ -31,7 +31,6 @@ cat("The seed used to be ", node, "\n")
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"ComparingApproximateMethods/data_generation.R"))
 
-
 # partition as observed and predicted
 obsCoords <- coords[idSampled,]
 prdCoords <- coords[-idSampled,]
@@ -266,5 +265,3 @@ scores_df <- pred_summary %>%
 scores_df
 
 save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
-
-
