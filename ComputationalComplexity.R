@@ -45,6 +45,14 @@ RCC_df %>%
 m <- 3.42*1.25/seq(0.1,1,l=10)
 m
 
+m <- c(22,30,36,42)
+ell <- seq(0.05,0.5,l=10)
+sapply(1:10, function(i) m*ell[i]/3.42)
+sapply(1:10, function(i) 4.5*ell[i])
+sapply(1:10, function(i) pmax(pmin(m*ell[i]/3.42, 4.5*ell[i]),1.2))
+
+
+
 minimum_m <- function(c,l_by_S){
   ceiling(3.42*c/l_by_S)
 }
