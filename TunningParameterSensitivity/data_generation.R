@@ -15,8 +15,8 @@ sigma1 <- 1
 sigma2 <- 1
 sigma1sq <- sigma1^2
 sigma2sq <- sigma2^2
-#lscale1 <- sqrt(2)/2 
-#lscale2 <- sqrt(2)/2
+#lscale1 <- 0.5 # varying lscale1 comes from the R script file 
+#lscale2 <- 0.5 # varying lscale2 comes from the R script file
 tau <- 0.5
 tausq <- tau^2
 gamma <- 1.5
@@ -24,28 +24,25 @@ gamma <- 1.5
 distMat <- fields::rdist(coords)
 
 SigmaX <- 1*0.25^abs(outer(1:2,1:2,'-'))
-set.seed(10)
+set.seed(500) # seed for generating covariates
 X <- cbind(1,cbind(rnorm(n=nsite),rnorm(n=nsite)) %*% t(chol(SigmaX)))
 muX <- drop(X %*% theta)
+set.seed(NULL)
+
+set.seed(node*1000) # seed for generating the random effect
 z1 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma1, lscale = lscale1) + diag(x=1e-9, nrow = nsite, ncol = nsite)), rnorm(nsite)))
 z2 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma2, lscale = lscale2) + diag(x=1e-9, nrow = nsite, ncol = nsite)), rnorm(nsite)))
 linpred <- muX +  gamma * exp(z1) + z2
+set.seed(NULL)
+
+set.seed(node*2000) # seed for generating the response
 y <- rnorm(n = nsite, mean = linpred, sd = tau)
+set.seed(NULL)
+
+set.seed(1) # seed for selecting sampled locations
 nsize <- 500
 idSampled <- sample.int(n = nsite, size = nsize, replace = FALSE)
 set.seed(NULL)
-#hist(y, nclass = 21)
-#hist(y[idSampled], nclass = 21)
-#plot(density(y[idSampled]))
-#boxplot(y[idSampled])
-
-## Settings for HSGP following m = 3.42*c/(ell/S) with c>= 1.2
-m1 <- ceiling(3.42*1.30/seq(0.1,1,l=10)); m1
-c1 <- rep(1.25,10); c1[m1<22] <- 1.5; c1
-m1[m1<22] <- 22; m1
-m2 <- ceiling(3.42*1.25/seq(0.1,1,l=10)); m2
-c2 <- rep(1.25,10); c2[m2<22] <- 1.5; c2
-m2[m2<22] <- 22; m2
 
 obj_all <- ls()
 obj_keep <- c("idSampled", "y", "z1", "z2", "X", "theta", "sigma1", "sigma2", "lscale1", "lscale2", "tau", "coords", "gamma", "nsize", "m1", "m2", "c1", "c2")

@@ -102,7 +102,8 @@ model {
   vector[N] z2 = cholesky_decompose(add_diag(C2,jitter)) * noise2;
   
   theta_std ~ std_normal();
-  abs_gamma ~ std_normal();
+  //abs_gamma ~ std_normal();
+  abs_gamma ~ exponential(lambda_tau);
   sigma1 ~ exponential(lambda_sigma1);
   sigma2 ~ exponential(lambda_sigma2);
   tau ~ exponential(lambda_tau);

@@ -24,14 +24,18 @@ gamma <- 1.5
 distMat <- fields::rdist(coords)
 
 SigmaX <- 1*0.25^abs(outer(1:2,1:2,'-'))
-set.seed(node*500) # seed for fixing the random effect and covariates
+set.seed(500) # seed for generating covariates
 X <- cbind(1,cbind(rnorm(n=nsite),rnorm(n=nsite)) %*% t(chol(SigmaX)))
 muX <- drop(X %*% theta)
+set.seed(NULL)
+
+set.seed(node*1000) # seed for generating the random effect
 z1 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma1, lscale = lscale1) + diag(x=1e-9, nrow = nsite, ncol = nsite)), rnorm(nsite)))
 z2 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma2, lscale = lscale2) + diag(x=1e-9, nrow = nsite, ncol = nsite)), rnorm(nsite)))
 linpred <- muX +  gamma * exp(z1) + z2
-#set.seed(NULL)
-#set.seed(node*100) # seed for replicated datasets
+set.seed(NULL)
+
+set.seed(node*2000) # seed for generating the response
 y <- rnorm(n = nsite, mean = linpred, sd = tau)
 set.seed(NULL)
 
