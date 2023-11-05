@@ -39,7 +39,7 @@ rm(obsDistMat)
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 22; m2 <- 22; mstar <- m1*m2
+m1 <- 32; m2 <- 32; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
 c <- c(1.5,1.5)
 L <- c*Lstar
@@ -53,8 +53,8 @@ head(lambda)
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
-lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
-uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
+lLimit <- min(obsDistVec)*2; lLimit # Practical range should not be lower than min distance
+uLimit <- max(obsDistVec)/2; uLimit # Practical range should not be greater than max distance
 
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
