@@ -21,7 +21,7 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args)==0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
-node <- as.numeric(args[1])-260 ### specify correct node here
+node <- as.numeric(args[1])-230 ### specify correct node here
 cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Data generation
@@ -44,15 +44,16 @@ prdX <- X[-idSampled,]
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
-obsMaxDist <- max(obsDistVec); obsMaxDist
-obsMedDist <- median(obsDistVec); obsMedDist
-obsMinDist <- min(obsDistVec); obsMinDist
+obsMaxDist <- max(obsDistVec)
+obsMedDist <- median(obsDistVec)
+obsMinDist <- min(obsDistVec)
+
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 40; m2 <- 40; mstar <- m1*m2
+m1 <- 32; m2 <- 32; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
 c <- c(1.5,1.5)
 L <- c*Lstar
@@ -64,23 +65,32 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+lLimit <- min(obsDistVec)*2; lLimit # Range = 2 (Length Scale)
+uLimit <- max(obsDistVec)/2; uLimit 
 
+## Inverse Gamma for length scale
 library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
+
+## Exponential prior for SD
+lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
+lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+lambda_tau <- -log(0.01)/1; lambda_tau
+pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 
 head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], positive_skewness = 1)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -165,7 +175,7 @@ z_summary <- tibble(z = z[idSampled],
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TunningParameterSensitivity/HS40_HS40_LS",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TunningParameterSensitivity/HS32_HS32_LS",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -243,9 +253,9 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("HS40_HS40_LS",node)) %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("HS32_HS32_LS",node)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/HS40_HS40_LS",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/HS32_HS32_LS",node,".RData"))
 

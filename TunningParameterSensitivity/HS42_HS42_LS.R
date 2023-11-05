@@ -13,7 +13,6 @@ library(nleqslv)
 ###########################################################################
 node <- 2
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-
 ##########################################################################
 # ARC Preparation
 ##########################################################################
@@ -22,14 +21,17 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args)==0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
-node <- as.numeric(args[1])-300 ### specify correct node here
+node <- as.numeric(args[1])-260 ### specify correct node here
 cat("The seed used to be ", node, "\n")
-
 ##########################################################################
 # Data generation
 ##########################################################################
+ells <- seq(0.1,1,l=10)
+lscale1 <- ells[node]; lscale1
+lscale2 <- ells[node]; lscale2
+
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ComparingApproximateMethods/data_generation.R"))
+source(paste0(fpath,"TunningParameterSensitivity/data_generation.R"))
 
 # partition as observed and predicted
 obsCoords <- coords[idSampled,]
@@ -38,10 +40,6 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
-obsZ1 <- z1[idSampled]
-obsZ2 <- z2[idSampled]
-prdZ1 <- z1[-idSampled]
-prdZ2 <- z2[-idSampled]
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -49,14 +47,13 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
-rm(obsDistMat)
 
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 32; m2 <- 32; mstar <- m1*m2
+m1 <- 42; m2 <- 42; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
 c <- c(1.5,1.5)
 L <- c*Lstar
@@ -70,31 +67,26 @@ head(lambda)
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
-lLimit <- min(obsDistVec)*2; lLimit # Practical range should not be lower than min distance
-uLimit <- max(obsDistVec)/2; uLimit # Practical range should not be greater than max distance
+lLimit <- min(obsDistVec)*2; lLimit # Range = 2 (Length Scale)
+uLimit <- max(obsDistVec)/2; uLimit 
 
+## Inverse Gamma for length scale
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
-summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
 
-## Exponential and PC prior
+## Exponential prior for SD
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
 lambda_tau <- -log(0.01)/1; lambda_tau
 pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
-lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
-lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
-pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
-summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
 
-## Stan input
 head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
@@ -117,6 +109,7 @@ elapsed_time$total/3600
 cmdstan_fit$cmdstan_diagnose()
 sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
+
 ## Posterior summaries
 pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
 pars_true_df <- tibble(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
@@ -142,7 +135,7 @@ obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda
 str(obsH)
 post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega1[l,])); str(post_z1)
 
-z1_summary <- tibble(z1 = obsZ1,
+z1_summary <- tibble(z1 = z1[idSampled],
                      post.mean = apply(post_z1, 2, mean),
                      post.sd = apply(post_z1, 2, sd),
                      post.q2.5 = apply(post_z1, 2, quantile2.5),
@@ -158,7 +151,7 @@ obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda
 str(obsH)
 post_z2 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega2[l,])); str(post_z2)
 
-z2_summary <- tibble(z2 = obsZ2,
+z2_summary <- tibble(z2 = z2[idSampled],
                      post.mean = apply(post_z2, 2, mean),
                      post.sd = apply(post_z2, 2, sd),
                      post.q2.5 = apply(post_z2, 2, quantile2.5),
@@ -182,7 +175,7 @@ z_summary <- tibble(z = z[idSampled],
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TunningParameterSensitivity/HS42_HS42_LS",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -194,7 +187,7 @@ predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambd
 post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,])); str(post_z1pred)
 
 z1pred_summary <- tibble(
-  z1 = prdZ1,
+  z1 = z1[-idSampled],
   post.mean = apply(post_z1pred, 2, mean),
   post.sd = apply(post_z1pred, 2, sd),
   post.q2.5 = apply(post_z1pred, 2, quantile2.5),
@@ -209,7 +202,7 @@ predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambd
 post_z2pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega2[l,])); str(post_z2pred)
 
 z2pred_summary <- tibble(
-  z2 = prdZ2,
+  z2 = z2[-idSampled],
   post.mean = apply(post_z2pred, 2, mean),
   post.sd = apply(post_z2pred, 2, sd),
   post.q2.5 = apply(post_z2pred, 2, quantile2.5),
@@ -260,8 +253,9 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSHS_GLGC") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("HS42_HS42_LS",node)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/HS42_HS42_LS",node,".RData"))
+

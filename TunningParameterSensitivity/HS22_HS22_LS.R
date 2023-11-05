@@ -55,7 +55,7 @@ xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
 m1 <- 22; m2 <- 22; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-c <- c(1.2,1.2)
+c <- c(1.5,1.5)
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -67,8 +67,8 @@ head(lambda)
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
-lLimit <- min(obsDistVec); lLimit
-uLimit <- 0.5*max(obsDistVec)/2.75; uLimit
+lLimit <- min(obsDistVec)*2; lLimit # Range = 2 (Length Scale)
+uLimit <- max(obsDistVec)/2; uLimit 
 
 ## Inverse Gamma for length scale
 library(nleqslv)

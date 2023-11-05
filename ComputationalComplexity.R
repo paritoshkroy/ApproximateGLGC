@@ -15,6 +15,8 @@ HSHSComputationalComplexity <- function(n,m1,m2) {
   2*(n+1)*(m1*m2) + n
 }
 
+NNNNComputationalComplexity(n = 50, m = 15) / HSHSComputationalComplexity(n = 50, m1 = 42, m2 = 42)
+
 lscale <- seq(0.05,1,l=10)
 m <- 3.42*1.2/lscale;m
 m1 <- c(80,36,30,25,22,22,22,22,22,22)
