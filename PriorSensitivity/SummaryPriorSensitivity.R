@@ -21,6 +21,16 @@ fixed_summary_list <- lapply(1:length(fname), function(node){
     select(Method,everything())
   return(fixed_summary)
 })
+
+
+scores_list <- lapply(1:length(fname), function(node){
+  load(fname[node])
+  return(scores_df)
+})
+
+scores_df <- do.call(rbind, scores_list)
+
+## 
 fixed_summary <- do.call(rbind, fixed_summary_list)
 fixed_summary %>% filter(variable %in% "ell1")
 fixed_summary %>% filter(variable %in% "ell2") 

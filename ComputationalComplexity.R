@@ -67,3 +67,6 @@ lines(x = seq(0.1,1,l=10),y=m1.4, type= "b", col = "blue")
 lines(x = seq(0.1,1,l=10),y=m1.3, type= "b", col = "green")
 lines(x = seq(0.1,1,l=10),y=m1.2, type= "b", col = "magenta")
 
+NNNN_GLGC_Exp 0.719 0.672 0.950 0.367 0.887  46.2 0.973         54395.
+NNHS_GLGC_Exp 0.725 0.682 0.943 0.374 0.873  47.1 0.991         73260.
+HSHS_GLGC_Exp 0.725 0.684 0.942 0.374 0.869  47.2 0.991          2007.
