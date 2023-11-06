@@ -15,4 +15,4 @@ module load r/4.2.1
 # If all processes are allocated on the same node, NODESLIST contains : node1 node1 node1 node1
 # Cut the domain name and keep only the node name
 export NODESLIST=$(echo $(srun hostname | cut -f 1 -d '.'))
-R -f HSHS_Set1_LS.R --args $SLURM_ARRAY_TASK_ID
+R -f HSHS_Set2_LS.R --args $SLURM_ARRAY_TASK_ID
