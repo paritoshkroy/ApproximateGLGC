@@ -21,14 +21,14 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args)==0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
-node <- as.numeric(args[1])-100 ### specify correct node here
+node <- as.numeric(args[1])-140 ### specify correct node here
 cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Data generation
 ##########################################################################
 vector_lscale <- seq(0.05,0.65,l=13); vector_lscale
 vector_c <- round(pmax(4.5*vector_lscale,1.2),2); vector_c
-vector_m <- pmax(round(3.42*vector_c/vector_lscale,0),22); vector_m
+vector_m <- pmax(round(3.42*vector_c/vector_lscale,0),42); vector_m
 setup <- data.frame(lscale = vector_lscale, c = vector_c, m = vector_m)
 setup
 this_setup <- setup[node,]; this_setup
@@ -183,7 +183,7 @@ z_summary <- tibble(z = z[idSampled],
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Set1_LS",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Set3_LS",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -261,9 +261,9 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("HSHS_Set1_LS",node)) %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("HSHS_Set3_LS",node)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Set1_LS",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Set3_LS",node,".RData"))
 
