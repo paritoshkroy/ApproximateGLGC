@@ -142,8 +142,6 @@ data {
   real<lower=0> lambda_sigma1;
   real<lower=0> lambda_sigma2;
   real<lower=0> lambda_tau;
-  real a;
-  real b;
   int<lower=0, upper=1> positive_skewness;
 }
 
@@ -192,8 +190,8 @@ model {
   sigma1 ~ exponential(lambda_sigma1);
   sigma2 ~ exponential(lambda_sigma2);
   tau ~ exponential(lambda_tau);
-  ell1 ~ inv_gamma(a,b);
-  ell2 ~ inv_gamma(a,b);
+  ell1 ~ gamma(1.2,5);
+  ell2 ~ gamma(1.2,5);
   noise1 ~ std_normal();
   noise2 ~ std_normal();
   vector[N] mu = X * theta + gamma * exp(z1) + z2;

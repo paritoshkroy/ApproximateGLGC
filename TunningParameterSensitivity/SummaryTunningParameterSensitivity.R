@@ -119,7 +119,7 @@ scores_df <- scores_df %>% mutate(m1factor = factor(m1, labels = c("Full",sort(u
 scores_df <- scores_df %>% mutate(m2factor = factor(m2, labels = c("Full",sort(unique(m2))[-1])))
 scores_df %>% select(m1factor)
 
-scores_df <- scores_df  %>% filter(LS <= 4)
+#scores_df <- scores_df  %>% filter(LS <= 4)
 ## Energy Score
 library(gridExtra)
 maxmin_escore <- range(scores_df$ES)

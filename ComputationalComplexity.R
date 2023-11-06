@@ -17,6 +17,35 @@ HSHSComputationalComplexity <- function(n,m1,m2) {
 
 NNNNComputationalComplexity(n = 50, m = 15) / HSHSComputationalComplexity(n = 50, m1 = 42, m2 = 42)
 
+vector_lscale <- seq(0.05,0.65,l=13); vector_lscale
+vector_c <- round(pmax(4.5*vector_lscale,1.2),2); vector_c
+vector_m1 <- pmax(round(3.42*vector_c/vector_lscale,0),22); vector_m1
+vector_m2 <- pmax(round(3.42*vector_c/vector_lscale,0),32); vector_m2
+vector_m3 <- pmax(round(3.42*vector_c/vector_lscale,0),42); vector_m3
+library(tidyverse)
+setup <- data.frame(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m2 = vector_m2, m3 = vector_m3)
+setup <- setup %>%
+  mutate(NN6_NN6 = NNNNComputationalComplexity(n = 500, m = 6)) %>%
+  mutate(NN10_NN10 = NNNNComputationalComplexity(n = 500, m = 10)) %>%
+  mutate(NN15_NN15 = NNNNComputationalComplexity(n = 500, m = 15)) %>%
+  mutate(NN20_NN20 = NNNNComputationalComplexity(n = 500, m = 20)) %>%
+  mutate(HSopt_HSopt1 = HSHSComputationalComplexity(n = 500, m1 = m1, m2 = m1)) %>%
+  mutate(HSopt_HSopt2 = HSHSComputationalComplexity(n = 500, m1 = m2, m2 = m2)) %>%
+  mutate(HSopt_HSopt3 = HSHSComputationalComplexity(n = 500, m1 = m3, m2 = m3))
+setup %>% gather(Key,Value,-lscale,-c,-m1,-m2,-m3) %>%
+  ggplot(aes(x = lscale, y = Value)) + 
+  geom_point(col = "dimgray", shape = 1) +
+  geom_path(aes(col = Key), linewidth = 0.7, alpha = 0.7) +
+  theme_bw() +
+  xlab(bquote("\u2113"[k])) +
+  ylab("Computational Complexity") +
+  theme(panel.grid = element_blank(),
+        legend.title = element_blank(),
+        legend.position = "right",
+        axis.title = element_text(size = 13))
+
+
+
 lscale <- seq(0.05,1,l=10)
 m <- 3.42*1.2/lscale;m
 m1 <- c(80,36,30,25,22,22,22,22,22,22)
@@ -44,14 +73,23 @@ RCC_df %>%
   ggplot(aes(x = lscale, y = `Relative Complexity`, group = Method)) + geom_line(aes(col = Method))
 
 
-m <- 3.42*1.25/seq(0.1,1,l=10)
-m
+2/c(40,20,10,5,4,3,2)
 
-m <- c(22,32,42)
+m <- 3.42*1.5/seq(0.1,1,l=10)
+m
+3.42*1.2/0.08
+m <- c(22,32,42,52)
 ell <- seq(0.05,0.5,l=10)
 sapply(1:10, function(i) m*ell[i]/3.42)
 sapply(1:10, function(i) 4.5*ell[i])
 sapply(1:10, function(i) pmax(pmin(m*ell[i]/3.42, 4.5*ell[i]),1.5))
+
+ell <- seq(0.05,0.65,l=13); ell
+c <- 4.5*ell; c
+c <- round(pmax(4.5*ell,1.2),1); c
+m <- round(3.42*c/ell,0); m
+setup <- data.frame(lscale = ell, c = c, m = m)
+setup
 
 minimum_m <- function(c,l_by_S){
   ceiling(3.42*c/l_by_S)
