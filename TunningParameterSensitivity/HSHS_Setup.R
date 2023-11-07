@@ -30,31 +30,26 @@ vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
 vector_c <- 1.2 + vector_lscale; vector_c
 
 #vector_m1 <- pmax(round(3.42*vector_c/vector_lscale,0),20); vector_m1
-vector_m1 <- rep(20,length(vector_c)); vector_m1
+vector_m1 <- rep(22,length(vector_c)); vector_m1
 setup1 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m1)
 setup1
 
 #vector_m2 <- pmax(round(3.42*vector_c/vector_lscale,0),25); vector_m2
-vector_m2 <- rep(25,length(vector_c)); vector_m2
+vector_m2 <- rep(28,length(vector_c)); vector_m2
 setup2 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m2)
 setup2
 
 #vector_m3 <- pmax(round(3.42*vector_c/vector_lscale,0),30); vector_m3
-vector_m3 <- rep(30,length(vector_c)); vector_m3
+vector_m3 <- rep(34,length(vector_c)); vector_m3
 setup3 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m3)
 setup3
 
 #vector_m4 <- pmax(round(3.42*vector_c/vector_lscale,0),35); vector_m4
-vector_m4 <- rep(35,length(vector_c)); vector_m4
+vector_m4 <- rep(40,length(vector_c)); vector_m4
 setup4 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m4)
 setup4
 
-#vector_m5 <- pmax(round(3.42*vector_c/vector_lscale,0),40); vector_m5
-vector_m5 <- rep(40,length(vector_c)); vector_m5
-setup5 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m5)
-setup5
-
-setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
+setup <- rbind(setup1,setup2,setup3,setup4) %>% distinct()
 setup
 setup %>% filter(lscale == 0.3)
 
@@ -88,6 +83,7 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
+rm(obsDistMat)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
@@ -105,8 +101,8 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- as.numeric(quantile(obsDistVec, prob = 0.025)); lLimit
-uLimit <- as.numeric(quantile(obsDistVec, prob = 0.975)); uLimit
+lLimit <- as.numeric(quantile(obsDistVec, prob = 0.01)); lLimit
+uLimit <- as.numeric(quantile(obsDistVec, prob = 0.99)); uLimit
 
 ## Inverse Gamma for length scale
 library(nleqslv)
