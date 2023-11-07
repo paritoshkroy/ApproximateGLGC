@@ -76,6 +76,10 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
+obsZ1 <- z1[idSampled]
+obsZ2 <- z2[idSampled]
+prdZ1 <- z1[-idSampled]
+prdZ2 <- z2[-idSampled]
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -169,7 +173,7 @@ obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda
 str(obsH)
 post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega1[l,])); str(post_z1)
 
-z1_summary <- tibble(z1 = z1[idSampled],
+z1_summary <- tibble(z1 = obsZ1,
                      post.mean = apply(post_z1, 2, mean),
                      post.sd = apply(post_z1, 2, sd),
                      post.q2.5 = apply(post_z1, 2, quantile2.5),
@@ -185,7 +189,7 @@ obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda
 str(obsH)
 post_z2 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega2[l,])); str(post_z2)
 
-z2_summary <- tibble(z2 = z2[idSampled],
+z2_summary <- tibble(z2 = obsZ2,
                      post.mean = apply(post_z2, 2, mean),
                      post.sd = apply(post_z2, 2, sd),
                      post.q2.5 = apply(post_z2, 2, quantile2.5),
@@ -194,22 +198,7 @@ z2_summary <- tibble(z2 = z2[idSampled],
 z2_summary
 z2_summary %>% mutate(btw = between(z2, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-## Recovery of z <- gamma*exp(z1) + z2
-size_post_samples <- nrow(draws_df); size_post_samples
-post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
-str(post_z1)
-str(post_z2)
-l <- 1
-post_z <- t(sapply(1:size_post_samples, function(l) post_gamma[l]*exp(post_z1[l,]) + post_z2[l,])); str(post_z)
-z <- gamma*exp(z1) + z2
-z_summary <- tibble(z = z[idSampled],
-                    post.mean = apply(post_z, 2, mean),
-                    post.sd = apply(post_z, 2, sd),
-                    post.q2.5 = apply(post_z, 2, quantile2.5),
-                    post.q50 = apply(post_z, 2, quantile50),
-                    post.q97.5 = apply(post_z, 2, quantile97.5))
-z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TuningParameterSensitivity/HSHS_Setup",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, file = paste0(fpath,"TuningParameterSensitivity/HSHS_Setup",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -247,7 +236,6 @@ mean(z2pred_summary[,"z2"] > z2pred_summary[,"post.q2.5"] & z2pred_summary[,"z2"
 
 ## Compute the means
 post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
-str(post_z)
 str(post_z1)
 str(post_z2)
 
@@ -291,5 +279,5 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(node, c, m1, m2, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TuningParameterSensitivity/HSHS_Setup",node,".RData"))
+save(node, c, m1, m2, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, pred_summary, scores_df, file = paste0(fpath,"TuningParameterSensitivity/HSHS_Setup",node,".RData"))
 

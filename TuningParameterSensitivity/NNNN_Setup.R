@@ -63,6 +63,10 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
+obsZ1 <- z1[idSampled]
+obsZ2 <- z2[idSampled]
+prdZ1 <- z1[-idSampled]
+prdZ2 <- z2[-idSampled]
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -81,8 +85,8 @@ str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
 obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
-obsZ1 <- z1[idSampled][neiMatInfo$ord]
-obsZ2 <- z2[idSampled][neiMatInfo$ord]
+obsZ1 <- obsZ1[neiMatInfo$ord]
+obsZ2 <- obsZ2[idSampled][neiMatInfo$ord]
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
