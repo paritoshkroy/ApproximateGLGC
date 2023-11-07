@@ -65,7 +65,7 @@ m1 <- as.numeric(this_setup[,"m"]); m1
 m2 <- as.numeric(this_setup[,"m"]); m2
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"TunningParameterSensitivity/data_generation.R"))
+source(paste0(fpath,"TuningParameterSensitivity/data_generation.R"))
 
 #######################################################################
 ## partition as observed and predicted
@@ -209,7 +209,7 @@ z_summary <- tibble(z = z[idSampled],
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Setup",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TuningParameterSensitivity/HSHS_Setup",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -291,5 +291,5 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(node, c, m1, m2, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Setup",node,".RData"))
+save(node, c, m1, m2, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TuningParameterSensitivity/HSHS_Setup",node,".RData"))
 

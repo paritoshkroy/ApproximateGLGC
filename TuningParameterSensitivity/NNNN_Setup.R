@@ -52,7 +52,7 @@ lscale2 <- as.numeric(this_setup[,"lscale"]); lscale2
 m <- as.numeric(this_setup[,"m"]); m
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"TunningParameterSensitivity/data_generation.R"))
+source(paste0(fpath,"TuningParameterSensitivity/data_generation.R"))
 
 #######################################################################
 ## partition as observed and predicted
@@ -169,7 +169,7 @@ z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TunningParameterSensitivity/NNNN_Setup",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TuningParameterSensitivity/NNNN_Setup",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -243,4 +243,4 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(node, m, elapsed_time, sampler_diag, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/NNNN_Setup",node,".RData"))
+save(node, m, elapsed_time, sampler_diag, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TuningParameterSensitivity/NNNN_Setup",node,".RData"))
