@@ -101,8 +101,7 @@ model {
   matrix[N,N] L = cholesky_decompose(add_diag(C2, rep_vector(square(tau), N) + jitter));
   
   theta_std ~ std_normal();
-  //abs_gamma ~ std_normal();
-  abs_gamma ~ exponential(lambda_tau);
+  abs_gamma ~ std_normal();
   sigma1 ~ exponential(lambda_sigma1);
   sigma2 ~ exponential(lambda_sigma2);
   tau ~ exponential(lambda_tau);

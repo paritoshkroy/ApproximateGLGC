@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=101-113  # 10 nodes runs this model independently
+#SBATCH --array=101-170  # 70 nodes runs this model independently
 #SBATCH --account=def-aschmidt  # replace this with your own account
 #SBATCH --ntasks=16              # number of processes
 #SBATCH --mem-per-cpu=16000M      # memory; default unit is megabytes
@@ -15,4 +15,4 @@ module load r/4.2.1
 # If all processes are allocated on the same node, NODESLIST contains : node1 node1 node1 node1
 # Cut the domain name and keep only the node name
 export NODESLIST=$(echo $(srun hostname | cut -f 1 -d '.'))
-R -f HSHS_Set1_LS.R --args $SLURM_ARRAY_TASK_ID
+R -f HSHS_Setup.R --args $SLURM_ARRAY_TASK_ID

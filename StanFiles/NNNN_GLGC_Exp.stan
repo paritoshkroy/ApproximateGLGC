@@ -184,8 +184,7 @@ transformed parameters{
 model {
   vector[N] z1 = latent_nngp_matern32_stuff(noise1, square(sigma1), ell1, site2neiDist, neiDistMat, neiID, N, K); //bigO(Nm^3)
   theta_std ~ std_normal();
-  //abs_gamma ~ std_normal();
-  abs_gamma ~ exponential(lambda_tau);
+  abs_gamma ~ std_normal();
   sigma1 ~ exponential(lambda_sigma1);
   sigma2 ~ exponential(lambda_sigma2);
   tau ~ exponential(lambda_tau);

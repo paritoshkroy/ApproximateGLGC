@@ -26,9 +26,10 @@ cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Data generation
 ##########################################################################
-vector_lscale <- seq(0.05,0.65,l=13); vector_lscale
-vector_c <- round(pmax(4.5*vector_lscale,1.2),2); vector_c
-vector_m <- pmax(round(3.42*vector_c/vector_lscale,0),42); vector_m
+vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
+#vector_c <- round(pmax(4.5*vector_lscale,1.35),2); vector_c
+vector_c <- 1.2 + vector_lscale; vector_c
+vector_m <- pmax(round(3.42*vector_c/vector_lscale,0),44); vector_m
 setup <- data.frame(lscale = vector_lscale, c = vector_c, m = vector_m)
 setup
 this_setup <- setup[node,]; this_setup

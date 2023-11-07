@@ -32,7 +32,7 @@ z2 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma2, ls
 linpred <- muX +  gamma * exp(z1) + z2
 set.seed(NULL)
 
-set.seed(node*10) # seed for generating the response
+set.seed(node) # seed for generating the response
 y <- rnorm(n = nsite, mean = linpred, sd = tau)
 set.seed(NULL)
 

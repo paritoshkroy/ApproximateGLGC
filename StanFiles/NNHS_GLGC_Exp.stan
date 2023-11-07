@@ -233,8 +233,7 @@ transformed parameters{
 model {
   vector[N] z1 = H * omega1; //bigO(N*m1*m2)
   theta_std ~ std_normal();
-  //abs_gamma ~ std_normal();
-  abs_gamma ~ exponential(lambda_tau);
+  abs_gamma ~ std_normal();
   sigma1 ~ exponential(lambda_sigma1);
   sigma2 ~ exponential(lambda_sigma2);
   tau ~ exponential(lambda_tau);

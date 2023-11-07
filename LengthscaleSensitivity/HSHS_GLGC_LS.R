@@ -67,8 +67,6 @@ head(lambda)
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
-lLimit <- min(obsDistVec)*2; lLimit
-uLimit <- max(obsDistVec)/2; uLimit
 
 ## Exponential and PC prior
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1

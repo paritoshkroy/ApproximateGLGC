@@ -142,6 +142,8 @@ data {
   real<lower=0> lambda_sigma1;
   real<lower=0> lambda_sigma2;
   real<lower=0> lambda_tau;
+  real<lower=0> a;
+  real<lower=0> b;
   int<lower=0, upper=1> positive_skewness;
 }
 
@@ -185,13 +187,12 @@ model {
   vector[N] z2 = H * omega2; //bigO(Nm)
   
   theta_std ~ std_normal();
-  //abs_gamma ~ std_normal();
-  abs_gamma ~ exponential(lambda_tau);
+  abs_gamma ~ std_normal();
   sigma1 ~ exponential(lambda_sigma1);
   sigma2 ~ exponential(lambda_sigma2);
   tau ~ exponential(lambda_tau);
-  ell1 ~ gamma(1.2,5);
-  ell2 ~ gamma(1.2,5);
+  ell1 ~ inv_gamma(a,b);
+  ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();
   noise2 ~ std_normal();
   vector[N] mu = X * theta + gamma * exp(z1) + z2;

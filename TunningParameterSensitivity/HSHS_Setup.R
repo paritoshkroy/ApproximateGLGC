@@ -7,11 +7,10 @@ library(magrittr)
 library(tidybayes)
 library(coda)
 library(nleqslv)
-
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 1
+node <- 6
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -24,24 +23,58 @@ if (length(args)==0) {
 node <- as.numeric(args[1])-100 ### specify correct node here
 cat("The seed used to be ", node, "\n")
 ##########################################################################
+# Setup for the simulation study
+##########################################################################
+vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
+#vector_c <- round(pmax(4.5*vector_lscale,1.35),2); vector_c
+vector_c <- 1.2 + vector_lscale; vector_c
+
+#vector_m1 <- pmax(round(3.42*vector_c/vector_lscale,0),20); vector_m1
+vector_m1 <- rep(20,length(vector_c)); vector_m1
+setup1 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m1)
+setup1
+
+#vector_m2 <- pmax(round(3.42*vector_c/vector_lscale,0),25); vector_m2
+vector_m2 <- rep(25,length(vector_c)); vector_m2
+setup2 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m2)
+setup2
+
+#vector_m3 <- pmax(round(3.42*vector_c/vector_lscale,0),30); vector_m3
+vector_m3 <- rep(30,length(vector_c)); vector_m3
+setup3 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m3)
+setup3
+
+#vector_m4 <- pmax(round(3.42*vector_c/vector_lscale,0),35); vector_m4
+vector_m4 <- rep(35,length(vector_c)); vector_m4
+setup4 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m4)
+setup4
+
+#vector_m5 <- pmax(round(3.42*vector_c/vector_lscale,0),40); vector_m5
+vector_m5 <- rep(40,length(vector_c)); vector_m5
+setup5 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m5)
+setup5
+
+setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
+setup
+setup %>% filter(lscale == 0.3)
+
+##########################################################################
 # Data generation
 ##########################################################################
-vector_lscale <- seq(0.05,0.65,l=13); vector_lscale
-vector_c <- round(pmax(4.5*vector_lscale,1.2),2); vector_c
-vector_m <- pmax(round(3.42*vector_c/vector_lscale,0),22); vector_m
-setup <- data.frame(lscale = vector_lscale, c = vector_c, m = vector_m)
-setup
+
 this_setup <- setup[node,]; this_setup
-lscale1 <- this_setup[,"lscale"]; lscale1
-lscale2 <- this_setup[,"lscale"]; lscale2
-c <- this_setup[,"c"]; lscale1
-m1 <- this_setup[,"m"]; m1
-m2 <- this_setup[,"m"]; m2
+lscale1 <- as.numeric(this_setup[,"lscale"]); lscale1
+lscale2 <- as.numeric(this_setup[,"lscale"]); lscale2
+c <- as.numeric(this_setup[,"c"]); c
+m1 <- as.numeric(this_setup[,"m"]); m1
+m2 <- as.numeric(this_setup[,"m"]); m2
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"TunningParameterSensitivity/data_generation.R"))
 
-# partition as observed and predicted
+#######################################################################
+## partition as observed and predicted
+#######################################################################
 obsCoords <- coords[idSampled,]
 prdCoords <- coords[-idSampled,]
 obsY <- y[idSampled]
@@ -55,7 +88,6 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
-
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
@@ -73,14 +105,12 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
-lLimit <- min(obsDistVec)*2; lLimit # Range = 2 (Length Scale)
-uLimit <- max(obsDistVec)/2; uLimit 
+lLimit <- as.numeric(quantile(obsDistVec, prob = 0.025)); lLimit
+uLimit <- as.numeric(quantile(obsDistVec, prob = 0.975)); uLimit
 
 ## Inverse Gamma for length scale
 library(nleqslv)
-ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 
@@ -183,7 +213,7 @@ z_summary <- tibble(z = z[idSampled],
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Set1_LS",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Setup",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -261,9 +291,9 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("HSHS_Set1_LS",node)) %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("HSHS_Setup",node)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Set1_LS",node,".RData"))
+save(node, c, m1, m2, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/HSHS_Setup",node,".RData"))
 
