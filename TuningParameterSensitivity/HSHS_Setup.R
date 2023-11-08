@@ -10,7 +10,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 6
+node <- 45
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -26,7 +26,7 @@ cat("The seed used to be ", node, "\n")
 # Setup for the simulation study
 ##########################################################################
 vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
-#vector_c <- round(pmax(4.5*vector_lscale,1.35),2); vector_c
+vector_c <- round(pmax(4.5*vector_lscale,1.35),2); vector_c
 vector_c <- 1.2 + vector_lscale; vector_c
 
 vector_m1 <- round(3.42*vector_c/vector_lscale,0); vector_m1
@@ -53,9 +53,9 @@ setup5 <- tibble(lscale = 0.05, c = vector_c[1], m = 86)
 setup5
 
 setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
-setup
+setup %>% print(n = 57)
 setup %>% filter(lscale == 0.05)
-setup %>% filter(lscale == 0.10)
+setup %>% filter(lscale == 0.15)
 
 ##########################################################################
 # Data generation
@@ -88,9 +88,9 @@ prdZ2 <- z2[-idSampled]
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
-obsMaxDist <- max(obsDistVec)
-obsMedDist <- median(obsDistVec)
-obsMinDist <- min(obsDistVec)
+obsMaxDist <- max(obsDistVec);obsMaxDist
+obsMedDist <- median(obsDistVec);obsMedDist
+obsMinDist <- min(obsDistVec);obsMinDist
 rm(obsDistMat)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
@@ -110,11 +110,11 @@ head(lambda)
 
 ## Prior elicitation
 lLimit <- as.numeric(quantile(obsDistVec, prob = 0.01)); lLimit
-uLimit <- as.numeric(quantile(obsDistVec, prob = 0.99)); uLimit
+uLimit <- as.numeric(quantile(obsDistVec, prob = 0.50)); uLimit
 
 ## Inverse Gamma for length scale
 library(nleqslv)
-ab <- nleqslv(c(5,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(3,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 

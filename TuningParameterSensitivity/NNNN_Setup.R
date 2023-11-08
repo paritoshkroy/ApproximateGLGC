@@ -10,7 +10,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 6
+node <- 3
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -71,9 +71,9 @@ prdZ2 <- z2[-idSampled]
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
-obsMaxDist <- max(obsDistVec)
-obsMedDist <- median(obsDistVec)
-obsMinDist <- min(obsDistVec)
+obsMaxDist <- max(obsDistVec);obsMaxDist
+obsMedDist <- median(obsDistVec);obsMedDist
+obsMinDist <- min(obsDistVec);obsMinDist
 rm(obsDistMat)
 ################################################################################
 ## NNGP preparation
@@ -90,7 +90,7 @@ obsZ2 <- obsZ2[idSampled][neiMatInfo$ord]
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
