@@ -8,6 +8,9 @@ fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 shp <- read_sf(paste0(fpath,"SSTempDataAnalysis/MediterraneanSeaShapeFiles/MediterraneanSea.shp"))
 ggplot(shp) + geom_sf(aes(fill = name))
 shp$name
+Eastern_Mediterranean_Sea <- c("Mediterranean Sea - Eastern Basin", "Aegean Sea", "Ionian Sea" ,"Adriatic Sea")
+shp <- shp %>% filter(name %in% Eastern_Mediterranean_Sea)
+str(shp)
 ggplot(shp) + geom_sf(aes(fill = name)) + theme_void() + theme(legend.title = element_blank())
 st_bbox(shp)
 
@@ -65,9 +68,8 @@ ggsave(filename = "./SSTempDataAnalysis/SelectedData/SSTempResidualsDistribution
 
 msst_df <- dt_shp_sf %>% st_drop_geometry()
 nsite <- nrow(msst_df); nsite
-nsize <- 1500
-psize <- nsite - nsize; psize
-
+psize <- 100
+nsize <- nsite - psize; nsize
 set.seed(123)
 idSampled <- sample.int(n = nsite, size = nsize, replace = FALSE)
 set.seed(NULL)
@@ -96,7 +98,7 @@ quantile(distVec, probs = seq(0,1,l=21))
 ## For minimum m1 and m2 for the HSGP
 Lstar <- as.vector(apply(apply(msst_df[,c("relocateLon","relocateLat")], 2, range),2,max)); Lstar
 quantile(distVec, probs = c(1,2.5,5)/100)
-minimum_identifiable_lscale <- 1.5; minimum_identifiable_lscale
+minimum_identifiable_lscale <- 1.2; minimum_identifiable_lscale
 c <- max(round(1.2+minimum_identifiable_lscale/Lstar,digits = 1)); c
 m1 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[1])); m1
 m2 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[2])); m2

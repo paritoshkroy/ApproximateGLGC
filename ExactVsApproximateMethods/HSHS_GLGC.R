@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"ExactVsApproximateMethods/data_generation.R"))
@@ -39,11 +39,15 @@ rm(obsDistMat)
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 22; m2 <- 22; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-c <- c(1.5,1.5)
-L <- c*Lstar
-str(L)
+
+quantile(obsDistVec, probs = c(1,2.5,5)/100)
+min_indentifiable_lscale <- 0.12
+c <- 1.2 + min_indentifiable_lscale; c
+m1 <- round(3.42*c/min_indentifiable_lscale); m1
+m2 <- round(3.42*c/min_indentifiable_lscale); m2
+mstar <- m1*m2; mstar
+L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
 str(S)
 lambda <- ((pi*S)/(2*L))^2
@@ -51,10 +55,8 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
-lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
-uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x

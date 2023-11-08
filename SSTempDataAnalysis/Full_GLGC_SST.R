@@ -13,14 +13,14 @@ fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 load(paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
-eastern_msst
-nsite <- nrow(eastern_msst); nsite
+msst_df
+nsite <- nrow(msst_df); nsite
 
 #####################################################################
 # Preparing model objects
 #####################################################################
-X <- cbind(1,unname(as.matrix(eastern_msst[,c("relocateLon","relocateLat")]))); str(X)
-y <- eastern_msst$temp
+X <- cbind(1,unname(as.matrix(msst_df[,c("relocateLon","relocateLat")]))); str(X)
+y <- msst_df$temp
 nsize <- length(idSampled); nsize
 psize <- nsite - nsize; psize
 obsY <- y[idSampled]; str(obsY)
@@ -41,8 +41,8 @@ rm(obsDistMat)
 ## Prior elicitation
 as.vector(apply(apply(scaled.coords, 2, range),2,max))
 summary(obsDistVec)
-lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.75); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.05); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
@@ -50,7 +50,7 @@ lambda_tau <- -log(0.01)/1; lambda_tau
 pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 
 library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(3,2), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 
