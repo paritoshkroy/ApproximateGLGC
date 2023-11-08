@@ -2,10 +2,11 @@ rm(list=ls())
 library(tidyverse)
 library(sf)
 library(lubridate)
-
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 
 shp <- read_sf(paste0(fpath,"SSTempDataAnalysis/MediterraneanSeaShapeFiles/MediterraneanSea.shp"))
+EastMedSea <- c("Mediterranean Sea - Eastern Basin", "Aegean Sea", "Ionian Sea" ,"Adriatic Sea")
+shp <- shp %>% filter(name %in% EastMedSea)
 ggplot(shp) + geom_sf(aes(fill = name))
 shp$name
 ggplot(shp) + geom_sf(aes(fill = name)) + theme_void() + theme(legend.title = element_blank())
@@ -13,7 +14,7 @@ st_bbox(shp)
 
 dt <- read_csv(paste0(fpath,"SSTempDataAnalysis/SelectedData/3504026.csv"))
 dt %>% group_by(SST_MM) %>% count()
-dt <- dt %>% filter(!is.na(SST_MM))
+dt <- dt %>% filter(!is.na(SST_MM)) %>% filter(SST_MM != 0)
 dt <- dt %>% mutate(date = as.Date(DATE)) %>% select(date,LONGITUDE,LATITUDE,SEA_SURF_TEMP)
 dt <- dt %>% drop_na()
 dt %>% distinct(LONGITUDE,LATITUDE)
@@ -40,7 +41,7 @@ str(dt_shp_sf)
 dt_shp_sf %>% distinct(lon,lat)
 ggplot(shp) + 
   geom_sf(fill = NA) + 
-  geom_sf(data = dt_shp_sf, aes(col = temp), size = 0.7) +
+  geom_sf(data = dt_shp_sf, aes(col = temp), shape = 1, size = 0.7) +
   scale_color_distiller(palette = "Spectral") +
   xlab("Longitude") +
   ylab("Latitude") +
@@ -51,8 +52,9 @@ ggplot(shp) +
         legend.position = "right")
 ggsave(filename = "./SSTempDataAnalysis/SelectedData/SSTempDataLocations.png", height = 4, width = 6)
 
-dt_shp_sf %>% 
-  mutate(resid = as.numeric(residuals(lm(temp~lon+lat)))) %>%
+dt_shp_sf <- dt_shp_sf %>% 
+  mutate(resid = as.numeric(residuals(lm(temp~lon+lat)))) 
+dt_shp_sf %>%
   ggplot(aes(x = resid)) +
   geom_histogram(aes(y = after_stat(density)), fill = NA, col = "dimgray", bins = 21) +
   geom_density() +
@@ -65,7 +67,7 @@ ggsave(filename = "./SSTempDataAnalysis/SelectedData/SSTempResidualsDistribution
 
 msst_df <- dt_shp_sf %>% st_drop_geometry()
 nsite <- nrow(msst_df); nsite
-nsize <- 1500
+nsize <- ceiling(nsite*0.90); nsize #1500
 psize <- nsite - nsize; psize
 
 set.seed(123)
@@ -90,17 +92,17 @@ coords <- msst_df %>% select(lon,lat) %>% as.matrix() %>% unname()
 scaled.coords <- msst_df %>% select(relocateLon,relocateLat) %>% as.matrix() %>% unname()
 distMat <- fields::rdist(coords)
 distVec <- distMat[lower.tri(distMat, diag = FALSE)]
-abline(v = quantile(distVec, probs = seq(0,1,l=21)), col = 2)
+abline(v = quantile(distVec, probs = seq(0,1,l = 21)), col = 2)
 quantile(distVec, probs = seq(0,1,l=21))
 
 ## For minimum m1 and m2 for the HSGP
 Lstar <- as.vector(apply(apply(msst_df[,c("relocateLon","relocateLat")], 2, range),2,max)); Lstar
 quantile(distVec, probs = c(1,2.5,5)/100)
-minimum_identifiable_lscale <- 1.5; minimum_identifiable_lscale
-c <- max(round(1.2+minimum_identifiable_lscale/Lstar,digits = 1)); c
+minimum_identifiable_lscale <- 1.20; minimum_identifiable_lscale
+c <- max(round(1.2 + minimum_identifiable_lscale/Lstar,digits = 1)); c
 m1 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[1])); m1
 m2 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[2])); m2
 m1*m2
 
-save(idSampled, msst_df, coords, scaled.coords, file = paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
+save(m1, m2, idSampled, msst_df, coords, scaled.coords, file = paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
 

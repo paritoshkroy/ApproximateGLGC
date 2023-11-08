@@ -43,7 +43,7 @@ rm(obsDistMat)
 ################################################################################
 quantile(obsDistVec, probs = c(1,2.5,5)/100)
 ## For minimum m1 and m2 for the HSGP with Matern32 covariance function
-minimum_identifiable_lscale <- 1.5; minimum_identifiable_lscale
+minimum_identifiable_lscale <- 1.2; minimum_identifiable_lscale
 Lstar <- as.vector(apply(apply(scaled.coords, 2, range),2,max)); Lstar
 c <- max(round(1.2+minimum_identifiable_lscale/Lstar,digits = 1)); c
 L <- c*Lstar; L
