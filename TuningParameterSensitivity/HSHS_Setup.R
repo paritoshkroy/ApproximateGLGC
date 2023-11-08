@@ -29,29 +29,33 @@ vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
 #vector_c <- round(pmax(4.5*vector_lscale,1.35),2); vector_c
 vector_c <- 1.2 + vector_lscale; vector_c
 
-#vector_m1 <- pmax(round(3.42*vector_c/vector_lscale,0),20); vector_m1
-vector_m1 <- rep(22,length(vector_c)); vector_m1
+vector_m1 <- round(3.42*vector_c/vector_lscale,0); vector_m1
+vector_m1 <- rep(20,length(vector_c)); vector_m1
 setup1 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m1)
 setup1
 
-#vector_m2 <- pmax(round(3.42*vector_c/vector_lscale,0),25); vector_m2
-vector_m2 <- rep(28,length(vector_c)); vector_m2
+vector_m2 <- round(3.42*vector_c/vector_lscale,0); vector_m2
+vector_m2 <- rep(24,length(vector_c)); vector_m2
 setup2 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m2)
 setup2
 
-#vector_m3 <- pmax(round(3.42*vector_c/vector_lscale,0),30); vector_m3
-vector_m3 <- rep(34,length(vector_c)); vector_m3
+vector_m3 <- round(3.42*vector_c/vector_lscale,0); vector_m3
+vector_m3 <- rep(31,length(vector_c)); vector_m3
 setup3 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m3)
 setup3
 
-#vector_m4 <- pmax(round(3.42*vector_c/vector_lscale,0),35); vector_m4
-vector_m4 <- rep(40,length(vector_c)); vector_m4
+vector_m4 <- round(3.42*vector_c/vector_lscale,0); vector_m4
+vector_m4 <- rep(44,length(vector_c)); vector_m4
 setup4 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m4)
 setup4
 
-setup <- rbind(setup1,setup2,setup3,setup4) %>% distinct()
+setup5 <- tibble(lscale = 0.05, c = vector_c[1], m = 86)
+setup5
+
+setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
 setup
 setup %>% filter(lscale == 0.05)
+setup %>% filter(lscale == 0.10)
 
 ##########################################################################
 # Data generation
