@@ -52,7 +52,7 @@ xyRanges <- apply(selected.sat.temps[,c("relocateLon","relocateLat")], 2, range)
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
 quantile(obsDistVec, probs = c(1,2.5,5)/100) ## minimum identifiable length scale 0.1
 minimum_identifiable_lscale <- 0.05; minimum_identifiable_lscale
-c <- max(round(1.2+minimum_identifiable_lscale/Lstar,digits = 1)); c
+c <- max(round(1.2 + minimum_identifiable_lscale/Lstar,digits = 1)); c
 L <- c*Lstar; L
 m1 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[1])); m1
 m2 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[2])); m2
@@ -69,7 +69,7 @@ head(lambda)
 #############################################################################
 
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
@@ -169,7 +169,7 @@ z_summary <- tibble(post.mean = apply(post_z, 2, mean),
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSHS_GLGC_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, file = paste0(fpath,"TemperatureDataAnalysis/HSHS_GLGC_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -247,5 +247,5 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(m1,m2,mstar,elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS_GLGC_Temps.RData"))
+save(m1,m2,mstar,elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS_GLGC_Temps.RData"))
 

@@ -161,7 +161,7 @@ z_summary <- tibble(post.mean = apply(post_z, 2, mean),
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"SSTempDataAnalysis/HSHS_GLGC_SST.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, file = paste0(fpath,"SSTempDataAnalysis/HSHS_GLGC_SST.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -237,5 +237,5 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(m1, m2, mstar, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"SSTempDataAnalysis/HSHS_GLGC_SST.RData"))
+save(m1, m2, mstar, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"SSTempDataAnalysis/HSHS_GLGC_SST.RData"))
 

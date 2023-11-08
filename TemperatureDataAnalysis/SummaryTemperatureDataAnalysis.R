@@ -81,3 +81,4 @@ scores_df <- scores_df %>%
 scores_df %>% select(MethodFactor, MAE, RMSE, CVG, CRPS, IS, ES, logs, `Elapsed Time`) %>% arrange(MethodFactor) %>% xtable::xtable()
 
 
+###
