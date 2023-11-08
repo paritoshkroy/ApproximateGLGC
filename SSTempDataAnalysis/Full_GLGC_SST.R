@@ -39,8 +39,10 @@ obsMinDist <- min(obsDistVec)
 rm(obsDistMat)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.05); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+as.vector(apply(apply(scaled.coords, 2, range),2,max))
+summary(obsDistVec)
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.75); uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
@@ -50,7 +52,7 @@ pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 library(nleqslv)
 ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
-curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
+curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 
 P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1))
@@ -173,7 +175,8 @@ pred_summary
 mean(pred_summary[,"y"]>pred_summary[,"post.q2.5"] & pred_summary[,"y"]<pred_summary[,"post.q97.5"])
 
 ## Computation for scoring rules
-## In the object PrdY there are 160 observations that are missing, to compute the scoring rules we ignore these cases
+## In the object PrdY there are 160 observations that are missing,
+## to compute the scoring rules we ignore these cases
 library(scoringRules)
 ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
 logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs

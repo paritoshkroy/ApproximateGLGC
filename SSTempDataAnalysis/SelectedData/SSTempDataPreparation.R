@@ -11,7 +11,8 @@ shp$name
 Eastern_Mediterranean_Sea <- c("Mediterranean Sea - Eastern Basin", "Aegean Sea", "Ionian Sea" ,"Adriatic Sea")
 shp <- shp %>% filter(name %in% Eastern_Mediterranean_Sea)
 str(shp)
-ggplot(shp) + geom_sf(aes(fill = name))
+ggplot(shp) + geom_sf(aes(fill = name)) + theme_void() + theme(legend.title = element_blank())
+st_bbox(shp)
 
 dt <- read_csv(paste0(fpath,"SSTempDataAnalysis/SelectedData/3504026.csv"))
 dt %>% group_by(SST_MM) %>% count()
@@ -34,17 +35,30 @@ dt <- dt %>% filter(!(lon>32 & lat <30.5))
 dt_sf <- st_as_sf(dt, coords = c("LONGITUDE","LATITUDE"))
 st_crs(dt_sf) <- st_crs(shp)
 st_bbox(shp)
-ggplot(shp) + geom_sf(fill = NA) + geom_sf(data = dt_sf, size = 0.1)
+ggplot(shp) + geom_sf(fill = NA) + geom_sf(data = dt_sf, size = 0.25)
 
 dt_shp_sf <- st_filter(dt_sf, shp, .predicate =  st_intersects)
 dt_shp_sf <- dt_shp_sf %>% mutate(temp = (temp-32)/1.8) # degree F to degree C
 str(dt_shp_sf)
 dt_shp_sf %>% distinct(lon,lat)
-ggplot(shp) + 
+ggp1 <- ggplot(shp) + 
   geom_sf(fill = NA) + 
-  geom_sf(data = dt_shp_sf, aes(col = temp), size = 1) +
-  scale_color_distiller(palette = "Spectral")
-dt_shp_sf %>% ggplot(aes(x = temp)) + geom_density()
+  geom_sf(data = dt_shp_sf, aes(col = temp), size = 0.7) +
+  scale_color_distiller(palette = "Spectral") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid = element_blank(),
+        legend.key.height = unit(1, 'cm'))
+ggp2 <- dt_shp_sf %>% ggplot(aes(x = temp)) + geom_density() +
+  xlab("Temperature") +
+  ylab("Density") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid = element_blank())
+ggp <- gridExtra::grid.arrange(ggp1,ggp2, nrow = 1)
+ggsave(ggp, filename = "./SSTempDataAnalysis/SelectedData/SSTempDataDistribution.png", height = 6, width = 9)
 
 eastern_msst <- dt_shp_sf %>% st_drop_geometry()
 nsite <- nrow(eastern_msst); nsite
