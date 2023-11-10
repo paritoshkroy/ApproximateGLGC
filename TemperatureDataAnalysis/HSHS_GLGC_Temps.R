@@ -52,10 +52,11 @@ xyRanges <- apply(selected.sat.temps[,c("relocateLon","relocateLat")], 2, range)
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
 quantile(obsDistVec, probs = c(1,2.5,5)/100) ## minimum identifiable length scale 0.1
 minimum_identifiable_lscale <- 0.05; minimum_identifiable_lscale
-c <- max(round(1.2 + minimum_identifiable_lscale/Lstar,digits = 1)); c
+#c <- max(round(1.2 + minimum_identifiable_lscale/Lstar,digits = 1)); c
+c <- pmax(1.2, 4.5*minimum_identifiable_lscale/Lstar); c
 L <- c*Lstar; L
-m1 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[1])); m1
-m2 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[2])); m2
+m1 <- ceiling(3.42 * c[1]/(minimum_identifiable_lscale/Lstar[1])); m1
+m2 <- ceiling(3.42 * c[2]/(minimum_identifiable_lscale/Lstar[2])); m2
 mstar <- m1*m2; mstar
 
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
