@@ -9,12 +9,18 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
+######################################################################
+# Generating the data
+######################################################################
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"ExactVsApproximateMethods/data_generation.R"))
 
 # partition as observed and predicted
+######################################################################
+# partition as observed and predicted
+######################################################################
 obsCoords <- coords[idSampled,]
 prdCoords <- coords[-idSampled,]
 obsY <- y[idSampled]
@@ -29,34 +35,38 @@ prdZ2 <- z2[-idSampled]
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
-obsMaxDist <- max(obsDistVec)
-obsMedDist <- median(obsDistVec)
-obsMinDist <- min(obsDistVec)
+obsMaxDist <- max(obsDistVec); obsMaxDist
+obsMedDist <- median(obsDistVec); obsMedDist
+obsMinDist <- min(obsDistVec); obsMinDist
 rm(obsDistMat)
 
 ################################################################################
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 20
+nNeighbors <- 15
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
 obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
-obsZ1 <- z1[idSampled][neiMatInfo$ord]
-obsZ2 <- z2[idSampled][neiMatInfo$ord]
+obsZ1 <- obsZ1[neiMatInfo$ord]
+obsZ2 <- obsZ2[neiMatInfo$ord]
 
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 22; m2 <- 22; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-c <- c(1.5,1.5)
-L <- c*Lstar
-str(L)
+
+quantile(obsDistVec, probs = c(1,2.5,5)/100)
+min_indentifiable_lscale <- 0.12
+c <- 1.2 + min_indentifiable_lscale; c
+m1 <- round(3.42*c/min_indentifiable_lscale); m1
+m2 <- round(3.42*c/min_indentifiable_lscale); m2
+mstar <- m1*m2; mstar
+L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
 str(S)
 lambda <- ((pi*S)/(2*L))^2
@@ -64,13 +74,11 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
-lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
-uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 library(nleqslv)
-ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
