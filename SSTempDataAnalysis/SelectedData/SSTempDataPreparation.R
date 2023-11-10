@@ -41,7 +41,7 @@ str(dt_shp_sf)
 dt_shp_sf %>% distinct(lon,lat)
 ggplot(shp) + 
   geom_sf(fill = NA) + 
-  geom_sf(data = dt_shp_sf, aes(col = temp), shape = 1, size = 0.7) +
+  geom_sf(data = dt_shp_sf, aes(col = temp), shape = 20, size = 1) +
   scale_color_distiller(palette = "Spectral") +
   xlab("Longitude") +
   ylab("Latitude") +
@@ -58,7 +58,7 @@ dt_shp_sf %>%
   ggplot(aes(x = resid)) +
   geom_histogram(aes(y = after_stat(density)), fill = NA, col = "dimgray", bins = 21) +
   geom_density() +
-  xlab("Distribution of residual temperatures") +
+  xlab("Residuals") +
   ylab("Density") +
   theme_bw() +
   theme(legend.title = element_blank(),
@@ -67,7 +67,7 @@ ggsave(filename = "./SSTempDataAnalysis/SelectedData/SSTempResidualsDistribution
 
 msst_df <- dt_shp_sf %>% st_drop_geometry()
 nsite <- nrow(msst_df); nsite
-nsize <- ceiling(nsite*0.90); nsize #1500
+nsize <- 500 #ceiling(nsite*0.50); nsize #1500
 psize <- nsite - nsize; psize
 
 set.seed(123)
@@ -105,4 +105,3 @@ m2 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[2])); m2
 m1*m2
 
 save(m1, m2, idSampled, msst_df, coords, scaled.coords, file = paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
-

@@ -78,3 +78,30 @@ selected.sat.temps <- selected.sat.temps %>% select(Lon,Lat,MaskTemp,TrueTemp)
 table(is.na(selected.sat.temps$MaskTemp)) ## FALSE are the data to be used in  model fitting
 nsite
 save(selected.sat.temps, coords, scaled.coords, file = paste0(fpath,"./TemperatureDataAnalysis/SelectedData/SelectedStatelliteTemps.rda"))
+
+
+as_tibble(selected.sat.temps[idSampled,]) %>% 
+  ggplot(aes(x = Lon, y = Lat)) + 
+  geom_point(aes(col = TrueTemp), shape = 20, size = 1) +
+  scale_color_distiller(palette = "Spectral") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid = element_blank(),
+        legend.key.height = unit(1, 'cm'), 
+        legend.position = "right")
+ggsave(filename = "./TemperatureDataAnalysis/SelectedData/TemperatureDataLocations.png", height = 4, width = 6)
+
+as_tibble(selected.sat.temps[idSampled,]) %>% 
+  mutate(resid = as.numeric(residuals(lm(TrueTemp~scale(Lon, scale = FALSE) + scale(Lat, scale =FALSE))))) %>%
+  ggplot(aes(x = resid)) +
+  geom_histogram(aes(y = after_stat(density)), fill = NA, col = "dimgray", bins = 21) +
+  geom_density() +
+  xlab("Residuals") +
+  ylab("Density") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid = element_blank())
+ggsave(filename = "./TemperatureDataAnalysis/SelectedData/TemperatureResidualsDistribution.png", height = 4, width = 6)
+
