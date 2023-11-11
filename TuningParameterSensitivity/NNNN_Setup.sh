@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=201-256  # 56 nodes runs this model independently
+#SBATCH --array=201-270  # 70 nodes runs this model independently
 #SBATCH --account=def-aschmidt  # replace this with your own account
 #SBATCH --ntasks=16              # number of processes
 #SBATCH --mem-per-cpu=16000M      # memory; default unit is megabytes

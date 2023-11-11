@@ -15,6 +15,7 @@ HSHSComputationalComplexity <- function(n,m1,m2) {
   2*(n+1)*(m1*m2) + n
 }
 
+
 NNNNComputationalComplexity(n = 50, m = 15) / HSHSComputationalComplexity(n = 50, m1 = 42, m2 = 42)
 
 vector_lscale <- seq(0.05,0.65,l=13); vector_lscale

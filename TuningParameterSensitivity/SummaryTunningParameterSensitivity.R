@@ -9,20 +9,21 @@ library(coda)
 library(fields)
 library(lubridate)
 library(scoringRules)
-load("./TunningParameterSensitivity/TunningParameterSensitivitySummary.RData")
-###########################################################################
-### Gaussian Model
-###########################################################################
+
+
 fname <- list.files(pattern = "*\\.RData", full.names = FALSE)
 fixed_summary_list <- lapply(1:length(fname), function(node){
   load(fname[node])
-  fixed_summary <- fixed_summary %>% 
-    mutate(LS = unlist(strsplit(fname[node], "_"))[3]) %>%
-    mutate(LS = as.numeric(gsub(".*?([0-9]+).*", "\\1", LS))) %>%
-    mutate(Method = paste(unlist(strsplit(fname[node], "_"))[1], unlist(strsplit(fname[node], "_"))[2], sep="_")) %>%
-    select(Method,LS,everything())
+  fixed_summary <- fixed_summary %>% mutate(fname = fname[node])
   return(fixed_summary)
 })
+
+scores_list <- lapply(1:length(fname), function(node){
+  load(fname[node])
+  return(scores_df)
+})
+
+
 fixed_summary <- do.call(rbind, fixed_summary_list)
 fixed_summary %>% filter(variable %in% "ell1") %>% arrange(LS)
 fixed_summary %>% filter(variable %in% "ell2") %>% arrange(LS)

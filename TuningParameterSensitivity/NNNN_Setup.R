@@ -26,7 +26,7 @@ cat("The seed used to be ", node, "\n")
 # Setup for the simulation study
 ##########################################################################
 vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
-setup1 <- tibble(lscale = vector_lscale, m = 6)
+setup1 <- tibble(lscale = vector_lscale, m = 5)
 setup1
 
 setup2 <- tibble(lscale = vector_lscale, m = 10)
@@ -38,7 +38,10 @@ setup3
 setup4 <- tibble(lscale = vector_lscale, m = 20)
 setup4
 
-setup <- rbind(setup1,setup2,setup3,setup4) %>% distinct()
+setup5 <- tibble(lscale = vector_lscale, m = 25)
+setup5
+
+setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
 setup
 setup %>% filter(lscale == 0.05)
 
@@ -118,8 +121,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 2000,
+                          iter_sampling = 2000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
