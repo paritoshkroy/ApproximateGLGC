@@ -10,7 +10,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 45
+node <- 22
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -26,30 +26,30 @@ cat("The seed used to be ", node, "\n")
 # Setup for the simulation study
 ##########################################################################
 vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
-vector_c <- round(pmax(4.5*vector_lscale,1.35),2); vector_c
-vector_c <- 1.2 + vector_lscale; vector_c
+vector_c <- round(pmax(4.5*vector_lscale,1.5),2); vector_c
+#vector_c <- 1.2 + vector_lscale; vector_c
 
 vector_m1 <- round(3.42*vector_c/vector_lscale,0); vector_m1
-vector_m1 <- rep(20,length(vector_c)); vector_m1
+vector_m1 <- rep(26,length(vector_c)); vector_m1
 setup1 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m1)
 setup1
 
 vector_m2 <- round(3.42*vector_c/vector_lscale,0); vector_m2
-vector_m2 <- rep(24,length(vector_c)); vector_m2
+vector_m2 <- rep(34,length(vector_c)); vector_m2
 setup2 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m2)
 setup2
 
 vector_m3 <- round(3.42*vector_c/vector_lscale,0); vector_m3
-vector_m3 <- rep(31,length(vector_c)); vector_m3
+vector_m3 <- rep(43,length(vector_c)); vector_m3
 setup3 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m3)
 setup3
 
 vector_m4 <- round(3.42*vector_c/vector_lscale,0); vector_m4
-vector_m4 <- rep(44,length(vector_c)); vector_m4
+vector_m4 <- rep(51,length(vector_c)); vector_m4
 setup4 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m4)
 setup4
 
-setup5 <- tibble(lscale = 0.05, c = vector_c[1], m = 86)
+setup5 <- tibble(lscale = 0.05, c = vector_c[1], m = 103)
 setup5
 
 setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
@@ -139,8 +139,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 2000,
+                          iter_sampling = 2000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

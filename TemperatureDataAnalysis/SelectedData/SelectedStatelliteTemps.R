@@ -53,7 +53,7 @@ idMissing <- which(is.na(selected.sat.temps$TrueTemp))
 length(idMissing)
 idNotMissing <- which(!is.na(selected.sat.temps$TrueTemp))
 length(idNotMissing)
-nsize <- 1000 #3000
+nsize <- 3000
 set.seed(1)
 idSampled <- sample(idNotMissing, size = nsize, replace = FALSE) 
 length(idSampled)
