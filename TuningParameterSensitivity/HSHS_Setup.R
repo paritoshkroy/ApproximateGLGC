@@ -138,8 +138,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 2000,
-                          iter_sampling = 2000,
+                          iter_warmup = 1500,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
