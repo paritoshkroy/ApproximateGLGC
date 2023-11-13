@@ -14,7 +14,7 @@ st_bbox(shp)
 
 dt <- read_csv(paste0(fpath,"SSTempDataAnalysis/SelectedData/3504026.csv"))
 dt %>% group_by(SST_MM) %>% count()
-#dt <- dt %>% filter(!is.na(SST_MM)) %>% filter(SST_MM != 0)
+dt <- dt %>% filter(!is.na(SST_MM)) #%>% filter(SST_MM != 0)
 dt <- dt %>% mutate(date = as.Date(DATE)) %>% select(date,LONGITUDE,LATITUDE,SEA_SURF_TEMP)
 dt <- dt %>% drop_na()
 dt %>% distinct(LONGITUDE,LATITUDE)
@@ -67,10 +67,10 @@ ggsave(filename = "./SSTempDataAnalysis/SelectedData/SSTempResidualsDistribution
 
 msst_df <- dt_shp_sf %>% st_drop_geometry()
 nsite <- nrow(msst_df); nsite
-nsize <- 1000 #ceiling(nsite*0.50); nsize #1500
+nsize <- ceiling(nsite*0.90); nsize #1500
 psize <- nsite - nsize; psize
 
-set.seed(100)
+set.seed(911)
 idSampled <- sample.int(n = nsite, size = nsize, replace = FALSE)
 set.seed(NULL)
 ####################################################################################
@@ -98,7 +98,8 @@ quantile(distVec, probs = seq(0,1,l=21))
 ## For minimum m1 and m2 for the HSGP
 Lstar <- as.vector(apply(apply(msst_df[,c("relocateLon","relocateLat")], 2, range),2,max)); Lstar
 quantile(distVec, probs = c(1,2.5,5)/100)
-minimum_identifiable_lscale <- 1.20; minimum_identifiable_lscale
+minimum_identifiable_lscale <- 1.2; minimum_identifiable_lscale
+minimum_identifiable_lscale/min(Lstar)
 c <- max(1.5, 4.5*minimum_identifiable_lscale/min(Lstar)); c
 m1 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[1])); m1
 m2 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[2])); m2
