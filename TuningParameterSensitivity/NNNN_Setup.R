@@ -25,7 +25,7 @@ cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Setup for the simulation study
 ##########################################################################
-vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
+vector_lscale <- seq(0.10,0.50,l=5); vector_lscale
 setup1 <- tibble(lscale = vector_lscale, m = 5)
 setup1
 
@@ -35,15 +35,8 @@ setup2
 setup3 <- tibble(lscale = vector_lscale, m = 15)
 setup3
 
-setup4 <- tibble(lscale = vector_lscale, m = 20)
-setup4
-
-setup5 <- tibble(lscale = vector_lscale, m = 25)
-setup5
-
-setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
-setup
-setup %>% filter(lscale == 0.05)
+setup <- rbind(setup1,setup2,setup3) %>% distinct()
+setup %>% print(n = nrow(setup))
 
 ##########################################################################
 # Data generation

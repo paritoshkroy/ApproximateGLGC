@@ -52,11 +52,11 @@ xyRanges <- apply(selected.sat.temps[,c("relocateLon","relocateLat")], 2, range)
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
 quantile(obsDistVec, probs = c(1,2.5,5)/100) ## minimum identifiable length scale 0.1
 minimum_identifiable_lscale <- 0.05; minimum_identifiable_lscale
-#c <- max(round(1.2 + minimum_identifiable_lscale/Lstar,digits = 1)); c
-c <- pmax(1.2, 4.5*minimum_identifiable_lscale/Lstar); c
+minimum_identifiable_lscale/Lstar
+c <- pmax(1.5, 4.5*min(minimum_identifiable_lscale/Lstar)); c
 L <- c*Lstar; L
-m1 <- ceiling(3.42 * c[1]/(minimum_identifiable_lscale/Lstar[1])); m1
-m2 <- ceiling(3.42 * c[2]/(minimum_identifiable_lscale/Lstar[2])); m2
+m1 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[1])); m1
+m2 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[2])); m2
 mstar <- m1*m2; mstar
 
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -81,7 +81,6 @@ library(nleqslv)
 ab <- nleqslv(c(3,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
-curve(dinvgamma(x, shape = 2, scale = 0.5), add = TRUE, col = 2)
 summary(rinvgamma(n = 9000, shape = ab[1], scale = ab[2]))
 
 P <- 3
@@ -98,8 +97,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 100,
+                          iter_sampling = 100,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

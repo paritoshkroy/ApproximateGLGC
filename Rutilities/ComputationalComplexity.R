@@ -1,3 +1,5 @@
+rm(list =ls())
+library(tidyverse)
 ## Computational Complexity
 FullComputationalComplexity <- function(n) {
   2*n^3
@@ -15,97 +17,141 @@ HSHSComputationalComplexity <- function(n,m1,m2) {
   2*(n+1)*(m1*m2) + n
 }
 
+set.seed(1492)
+ggplot(data.frame(x = seq(500,5000,l=10)), aes(x = x)) +
+  geom_function(fun = NNNNComputationalComplexity, args = list(m = 5), col = 1) +
+  geom_function(fun = NNNNComputationalComplexity, args = list(m = 10), col = 2) +
+  geom_function(fun = NNHSComputationalComplexity, args = list(m = 5, m1 = 22, m2 = 22), col = 3) +
+  geom_function(fun = HSHSComputationalComplexity, args = list(m1 = 22, m2 = 22), col = 4) 
+
+
+
+ggplot(data.frame(x = seq(5,20,5)), aes(x = x)) +
+  geom_function(fun = function(m,n) { 2*n*m^3}, 
+                args = list(n = 1000), col = 1) +
+  geom_function(fun = function(m,n) {n*m^3 + (n+1)*(m*m)}, 
+                args = list(n = 1000), col = 3) +
+  geom_function(fun = function(m,n) {2*(n+1)*(m*m) + n}, 
+                args = list(n = 1000), col = 4)
+
 
 NNNNComputationalComplexity(n = 50, m = 15) / HSHSComputationalComplexity(n = 50, m1 = 42, m2 = 42)
 
-vector_lscale <- seq(0.05,0.65,l=13); vector_lscale
-vector_c <- round(pmax(4.5*vector_lscale,1.2),2); vector_c
-vector_m1 <- pmax(round(3.42*vector_c/vector_lscale,0),22); vector_m1
-vector_m2 <- pmax(round(3.42*vector_c/vector_lscale,0),32); vector_m2
-vector_m3 <- pmax(round(3.42*vector_c/vector_lscale,0),42); vector_m3
+vector_lscale <- seq(0.05,0.7,l=14); vector_lscale
+vector_c <- round(pmax(4.5*vector_lscale,1.5),2); vector_c
+vector_m <- pmax(round(3.42*vector_c/vector_lscale,0),26); vector_m
 library(tidyverse)
-setup <- data.frame(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m2 = vector_m2, m3 = vector_m3)
+setup <- data.frame(lscale = vector_lscale, c = vector_c, m = vector_m)
+xtable::xtable(setup)
+
 setup <- setup %>%
-  mutate(NN6_NN6 = NNNNComputationalComplexity(n = 500, m = 6)) %>%
-  mutate(NN10_NN10 = NNNNComputationalComplexity(n = 500, m = 10)) %>%
-  mutate(NN15_NN15 = NNNNComputationalComplexity(n = 500, m = 15)) %>%
-  mutate(NN20_NN20 = NNNNComputationalComplexity(n = 500, m = 20)) %>%
-  mutate(HSopt_HSopt1 = HSHSComputationalComplexity(n = 500, m1 = m1, m2 = m1)) %>%
-  mutate(HSopt_HSopt2 = HSHSComputationalComplexity(n = 500, m1 = m2, m2 = m2)) %>%
-  mutate(HSopt_HSopt3 = HSHSComputationalComplexity(n = 500, m1 = m3, m2 = m3))
-setup %>% gather(Key,Value,-lscale,-c,-m1,-m2,-m3) %>%
+  mutate(`m = 5_300` = NNNNComputationalComplexity(n = 300, m = 5)) %>%
+  mutate(`m = 10_300` = NNNNComputationalComplexity(n = 300, m = 10)) %>%
+  mutate(`m = 15_300` = NNNNComputationalComplexity(n = 300, m = 15)) %>%
+  mutate(`m = 20_300` = NNNNComputationalComplexity(n = 300, m = 20)) %>%
+  mutate(`m = 25_300` = NNNNComputationalComplexity(n = 300, m = 25)) %>%
+  mutate(`HSHS_300` = HSHSComputationalComplexity(n = 300, m1 = m, m2 = m))
+
+setup <- setup %>%
+  mutate(`m = 5_500` = NNNNComputationalComplexity(n = 500, m = 5)) %>%
+  mutate(`m = 10_500` = NNNNComputationalComplexity(n = 500, m = 10)) %>%
+  mutate(`m = 15_500` = NNNNComputationalComplexity(n = 500, m = 15)) %>%
+  mutate(`m = 20_500` = NNNNComputationalComplexity(n = 500, m = 20)) %>%
+  mutate(`m = 25_500` = NNNNComputationalComplexity(n = 500, m = 25)) %>%
+  mutate(`HSHS_500` = HSHSComputationalComplexity(n = 500, m1 = m, m2 = m))
+
+setup <- setup %>%
+  mutate(`m = 5_1000` = NNNNComputationalComplexity(n = 1000, m = 5)) %>%
+  mutate(`m = 10_1000` = NNNNComputationalComplexity(n = 1000, m = 10)) %>%
+  mutate(`m = 15_1000` = NNNNComputationalComplexity(n = 1000, m = 15)) %>%
+  mutate(`m = 20_1000` = NNNNComputationalComplexity(n = 1000, m = 20)) %>%
+  mutate(`m = 25_1000` = NNNNComputationalComplexity(n = 1000, m = 25)) %>%
+  mutate(`HSHS_1000` = HSHSComputationalComplexity(n = 1000, m1 = m, m2 = m))
+
+setup <- setup %>%
+  mutate(`m = 5_2000` = NNNNComputationalComplexity(n = 2000, m = 5)) %>%
+  mutate(`m = 10_2000` = NNNNComputationalComplexity(n = 2000, m = 10)) %>%
+  mutate(`m = 15_2000` = NNNNComputationalComplexity(n = 2000, m = 15)) %>%
+  mutate(`m = 20_2000` = NNNNComputationalComplexity(n = 2000, m = 20)) %>%
+  mutate(`m = 25_2000` = NNNNComputationalComplexity(n = 2000, m = 25)) %>%
+  mutate(`HSHS_2000` = HSHSComputationalComplexity(n = 2000, m1 = m, m2 = m))
+
+setup <- setup %>% gather(Key,Value,-lscale,-c,-m)
+setup <- setup %>% separate(Key, into = c("Method","n"), sep = "_")
+table(setup$Method)
+
+setup %>%
+  mutate(n = recode(n, `300`=0, `500`=1, `1000`=2, `2000` =3)) %>%
+  mutate(n = factor(n, labels = c("n = 300","n = 500","n = 1000","n = 2000"))) %>%
+  mutate(Method = recode(Method, `m = 5`=1, `m = 10`=2, `m = 15` =3, `m = 20` = 4, `m = 25` = 5, `HSHS` = 6)) %>%
+  mutate(Method = factor(Method, labels = c("m = 5","m = 10","m = 15", "m = 20", "m = 25", "HSHS"))) %>%
   ggplot(aes(x = lscale, y = Value)) + 
-  geom_point(col = "dimgray", shape = 1) +
-  geom_path(aes(col = Key), linewidth = 0.7, alpha = 0.7) +
+  geom_path(aes(col = Method), linewidth = 0.5, alpha = 2) +
+  scale_colour_brewer(palette = "Spectral") +
+  facet_wrap(~n, ncol = 2, scales = "free_y") +
   theme_bw() +
-  xlab(bquote("\u2113"[k])) +
-  ylab("Computational Complexity") +
-  theme(panel.grid = element_blank(),
+  xlab(bquote(Lengthscale)) +
+  ylab(bquote(Computational~Complexity)) +
+  theme(strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        panel.grid = element_blank(),
         legend.title = element_blank(),
         legend.position = "right",
-        axis.title = element_text(size = 13))
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 11),
+        axis.ticks.y = element_blank())
+ggsave(filename = "Computational_Complexity_Plots.png", height = 6, width = 10)
 
 
+##
+vector_lscale <- seq(0.1,0.5,l=9); vector_lscale
+vector_c <- round(pmax(4.5*vector_lscale,1.5),2); vector_c
+round(3.42*vector_c/vector_lscale,0)
+vector_m1 <- pmax(round(3.42*vector_c/vector_lscale,0),22); vector_m1
+vector_m2 <- pmax(round(3.42*vector_c/vector_lscale,0),32); vector_m2
+vector_m3 <- pmax(round(3.42*vector_c/vector_lscale,0),44); vector_m3
+vector_m4 <- pmax(round(3.42*vector_c/vector_lscale,0),51); vector_m4
+vector_m5 <- pmax(round(3.42*vector_c/vector_lscale,0),58); vector_m5
+library(tidyverse)
+setup <- data.frame(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m2 = vector_m2, m3 = vector_m3, m4 = vector_m4, m5 = vector_m5)
 
-lscale <- seq(0.05,1,l=10)
-m <- 3.42*1.2/lscale;m
-m1 <- c(80,36,30,25,22,22,22,22,22,22)
-m2 <- c(80,36,30,25,22,22,22,22,22,22)
-m <- c(15,15,15,15,15,10,10,10,10,10)
-n <- 100000
+xtable::xtable(setup)
 
-3.42*1.5/0.1
-sqrt(8)/2.75
+setup <- setup %>%
+  mutate(`HSHS(22)` = HSHSComputationalComplexity(n = 1000, m1 = m1, m2 = m1)) %>%
+  mutate(`HSHS(32)` = HSHSComputationalComplexity(n = 1000, m1 = m2, m2 = m2)) %>%
+  mutate(`HSHS(44)` = HSHSComputationalComplexity(n = 1000, m1 = m3, m2 = m3)) %>%
+  mutate(`HSHS(51)` = HSHSComputationalComplexity(n = 1000, m1 = m4, m2 = m4)) %>%
+  mutate(`HSHS(58)` = HSHSComputationalComplexity(n = 1000, m1 = m5, m2 = m5))
 
-RCC_list <- lapply(1:10, function(i) {
-  FCC <- FullComputationalComplexity(n = n)
-  NNNNCC <- NNNNComputationalComplexity(n = n, m = m[i])
-  NNHSCC <- NNHSComputationalComplexity(n = n, m = m[i], m1= m1[i], m2 = m2[i])
-  HSHSCC <- HSHSComputationalComplexity(n = n, m1 =m1[i], m2 = m2[i])
-  tibble(Method = c("NNNN","NNHS","HSHS"), 
-         `Relative Complexity` = c(NNNNCC/FCC, NNHSCC/FCC, HSHSCC/FCC),
-         lscale = lscale[i])
-})
-
-RCC_df <- do.call(rbind, RCC_list) 
-RCC_df
-
-RCC_df %>% 
-  ggplot(aes(x = lscale, y = `Relative Complexity`, group = Method)) + geom_line(aes(col = Method))
-
-
-2/c(40,20,10,5,4,3,2)
-
-m <- 3.42*1.5/seq(0.1,1,l=10)
-m
-3.42*1.2/0.08
-m <- c(22,32,42,52)
-ell <- seq(0.05,0.5,l=10)
-sapply(1:10, function(i) m*ell[i]/3.42)
-sapply(1:10, function(i) 4.5*ell[i])
-sapply(1:10, function(i) pmax(pmin(m*ell[i]/3.42, 4.5*ell[i]),1.5))
-
-ell <- seq(0.05,0.65,l=13); ell
-c <- 4.5*ell; c
-c <- round(pmax(4.5*ell,1.2),1); c
-m <- round(3.42*c/ell,0); m
-setup <- data.frame(lscale = ell, c = c, m = m)
 setup
+setup <- setup %>% select(-c,-m1,-m2,-m3,-m4,-m5) %>% gather(Method,Value,-lscale)
 
-minimum_m <- function(c,l_by_S){
-  ceiling(3.42*c/l_by_S)
-}
-m1.2 <- minimum_m(c=1.2,l_by_S = seq(0.1,1,l=10))
-m1.3 <- minimum_m(c=1.3,l_by_S = seq(0.1,1,l=10))
-m1.4 <- minimum_m(c=1.4,l_by_S = seq(0.1,1,l=10))
-m1.5 <- minimum_m(c=1.5,l_by_S = seq(0.1,1,l=10))
-data.frame(ell = seq(0.1,1,l=10), m1.2 = m1.2, m1.3 = m1.3, m1.4 = m1.4, m1.5 = m1.5)
+table(setup$Method)
 
-plot(x = seq(0.1,1,l=10),y=m1.5, type= "b", col = "red")
-lines(x = seq(0.1,1,l=10),y=m1.4, type= "b", col = "blue")
-lines(x = seq(0.1,1,l=10),y=m1.3, type= "b", col = "green")
-lines(x = seq(0.1,1,l=10),y=m1.2, type= "b", col = "magenta")
-
-NNNN_GLGC_Exp 0.719 0.672 0.950 0.367 0.887  46.2 0.973         54395.
-NNHS_GLGC_Exp 0.725 0.682 0.943 0.374 0.873  47.1 0.991         73260.
-HSHS_GLGC_Exp 0.725 0.684 0.942 0.374 0.869  47.2 0.991          2007.
+setup %>%
+  mutate(Method = recode(Method, `HSHS(22)` = 1, `HSHS(32)` = 2, `HSHS(44)` = 3, `HSHS(51)` = 4, `HSHS(58)` = 5)) %>%
+  mutate(Method = factor(Method, labels = c("HSHS(22)", "HSHS(32)","HSHS(44)","HSHS(51)","HSHS(58)"))) %>%
+  ggplot(aes(x = lscale, y = Value)) + 
+  geom_path(linewidth = 0.5, linetype = "solid") +
+  geom_point(size = 1, shape = 1) +
+  facet_wrap(~Method, ncol = 3) +
+  scale_colour_brewer(palette = "Spectral") +
+  geom_hline(aes(yintercept = NNNNComputationalComplexity(n = 1000, m = 5), linetype = "1")) +
+  geom_hline(aes(yintercept = NNNNComputationalComplexity(n = 1000, m = 10), linetype = "2")) +
+  geom_hline(aes(yintercept = NNNNComputationalComplexity(n = 1000, m = 15), linetype = "3")) +
+  geom_hline(aes(yintercept = NNNNComputationalComplexity(n = 1000, m = 20), linetype = "4")) +
+  scale_linetype_manual(values=c("dotted","dotdash","dashed","longdash"),
+                        labels = c("NNNN(5)","NNNN(10)","NNNN(15)","NNNN(20)")) +
+  theme_bw() +
+  xlab(bquote(Lengthscale)) +
+  ylab(bquote(Computational~Complexity)) +
+  theme(strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        panel.grid = element_blank(),
+        legend.title = element_blank(),
+        legend.position = c(0.85,0.25),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 11),
+        axis.ticks.y = element_blank())
+ggsave(filename = "Computational_Complexity_Plots.png", height = 5, width = 10)

@@ -25,21 +25,21 @@ cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Setup for the simulation study
 ##########################################################################
-vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
+vector_lscale <- seq(0.10,0.50,l=5); vector_lscale
 vector_c <- round(pmax(4.5*vector_lscale,1.5),2); vector_c
 
 vector_m1 <- round(3.42*vector_c/vector_lscale,0); vector_m1
-vector_m1 <- rep(26,length(vector_c)); vector_m1
+vector_m1 <- rep(22,length(vector_c)); vector_m1
 setup1 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m1)
 setup1
 
 vector_m2 <- round(3.42*vector_c/vector_lscale,0); vector_m2
-vector_m2 <- rep(34,length(vector_c)); vector_m2
+vector_m2 <- rep(32,length(vector_c)); vector_m2
 setup2 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m2)
 setup2
 
 vector_m3 <- round(3.42*vector_c/vector_lscale,0); vector_m3
-vector_m3 <- rep(43,length(vector_c)); vector_m3
+vector_m3 <- rep(44,length(vector_c)); vector_m3
 setup3 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m3)
 setup3
 
@@ -48,13 +48,13 @@ vector_m4 <- rep(51,length(vector_c)); vector_m4
 setup4 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m4)
 setup4
 
-setup5 <- tibble(lscale = 0.05, c = vector_c[1], m = 103)
+vector_m5 <- round(3.42*vector_c/vector_lscale,0); vector_m5
+vector_m5 <- rep(58,length(vector_c)); vector_m4
+setup5 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m5)
 setup5
 
 setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
-setup %>% print(n = 57)
-setup %>% filter(lscale == 0.05)
-setup %>% filter(lscale == 0.15)
+setup %>% print(n = nrow(setup))
 
 ##########################################################################
 # Data generation
