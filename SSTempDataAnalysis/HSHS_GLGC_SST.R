@@ -46,7 +46,7 @@ quantile(obsDistVec, probs = c(1,2.5,5)/100)
 minimum_identifiable_lscale <- 1.2; minimum_identifiable_lscale
 Lstar <- as.vector(apply(apply(scaled.coords, 2, range),2,max)); Lstar
 #c <- max(round(1.2+minimum_identifiable_lscale/Lstar,digits = 1)); c
-c <- pmax(1.2, minimum_identifiable_lscale/Lstar); c
+c <- pmax(1.5, minimum_identifiable_lscale/Lstar); c
 L <- c*Lstar; L
 m1 <- ceiling(3.42 * c[1]/(minimum_identifiable_lscale/Lstar[1])); m1
 m2 <- ceiling(3.42 * c[2]/(minimum_identifiable_lscale/Lstar[2])); m2
@@ -90,7 +90,7 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
+                          iter_warmup = 1500,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
