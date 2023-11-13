@@ -15,4 +15,4 @@ module load r/4.2.1
 # If all processes are allocated on the same node, NODESLIST contains : node1 node1 node1 node1
 # Cut the domain name and keep only the node name
 export NODESLIST=$(echo $(srun hostname | cut -f 1 -d '.'))
-R -f HS36_HS36_GLGC_Temps.R
+R -f HSHS51_GLGC_Temps.R
