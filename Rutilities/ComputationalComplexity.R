@@ -223,13 +223,14 @@ vector_c <- 1.2 + 2*vector_lscale; vector_c
 cbind(vector_lscale, vector_c, round(3.42*vector_c/vector_lscale,0))
 vector_m1 <- pmax(23,round(3.42*vector_c/vector_lscale,0)); vector_m1
 vector_m2 <- pmax(27,round(3.42*vector_c/vector_lscale,0)); vector_m2
-vector_m3 <- pmax(30,round(3.42*vector_c/vector_lscale,0)); vector_m3
-vector_m4 <- pmax(34,round(3.42*vector_c/vector_lscale,0)); vector_m4
+vector_m3 <- pmax(34,round(3.42*vector_c/vector_lscale,0)); vector_m3
+vector_m4 <- pmax(40,round(3.42*vector_c/vector_lscale,0)); vector_m4
 vector_m5 <- pmax(48,round(3.42*vector_c/vector_lscale,0)); vector_m5
-vector_m6 <- pmax(89,round(3.42*vector_c/vector_lscale,0)); vector_m6
+vector_m6 <- pmax(58,round(3.42*vector_c/vector_lscale,0)); vector_m6
+vector_m7 <- pmax(89,round(3.42*vector_c/vector_lscale,0)); vector_m7
 
 library(tidyverse)
-setup <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m2 = vector_m2, m3 = vector_m3, m4 = vector_m4, m5 = vector_m5, m6 = vector_m6)
+setup <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m2 = vector_m2, m3 = vector_m3, m4 = vector_m4, m5 = vector_m5, m6 = vector_m6, m7 = vector_m7)
 setup <- setup %>% gather(x,m,-c,-lscale) %>% select(-x) %>% distinct()
 setup
 table(setup$m)
