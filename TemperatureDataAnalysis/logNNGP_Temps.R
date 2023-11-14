@@ -43,7 +43,7 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 15
+nNeighbors <- 10
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -110,7 +110,7 @@ library(bayesplot)
 color_scheme_set("brewer-Spectral")
 mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
 
-save(elapsed_time, fixed_summary, draws_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP15_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -179,9 +179,9 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "logNNGP15") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "logNNGP") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP15_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP_Temps.RData"))
 
