@@ -22,11 +22,8 @@ nsite <- nrow(selected.sat.temps); nsite
 ####################################################################################
 apply(selected.sat.temps[,c("Lon","Lat")], 2, range)  # range of the spatial domain
 selected.sat.temps <- selected.sat.temps %>% 
-  mutate(relocateLon = Lon - mean(range(Lon))) %>%
-  mutate(relocateLat = Lat - mean(range(Lat))) %>%
-  mutate(multiplier = max(max(relocateLon), max(relocateLat))) %>%
-  mutate(scaledLon = relocateLon/multiplier) %>%
-  mutate(scaledLat = relocateLat/multiplier)
+  mutate(scaledLon = Lon - mean(range(Lon))) %>%
+  mutate(scaledLat = Lat - mean(range(Lat)))
 apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range)
 
 #####################################################################
@@ -42,13 +39,27 @@ obsCoords <- selected.sat.temps %>% filter(!is.na(MaskTemp)) %>% select(scaledLo
 prdCoords <- selected.sat.temps %>% filter(is.na(MaskTemp)) %>% select(scaledLon,scaledLat) %>% as.matrix() %>% unname(); str(prdCoords)
 obsX <- cbind(1,obsCoords); str(obsX)
 prdX <- cbind(1,prdCoords); str(prdX)
+
+obsDistMat <- fields::rdist(obsCoords)
+str(obsDistMat)
+obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
+obsMaxDist <- max(obsDistVec)
+obsMedDist <- median(obsDistVec)
+obsMinDist <- min(obsDistVec)
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+rm(obsDistMat)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
-m1 <- 44; m2 <- 44; mstar <- m1*m2
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
-Lstar <- apply(xyRanges, 2, max); Lstar
-c <- c(1.5,1.5)
+Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
+minimum_estimable_lscale <- as.numeric(quantile(obsDistVec, prob = 0.01)); minimum_estimable_lscale/Lstar
+c <- pmax(1.5,4.75*(minimum_estimable_lscale/min(Lstar))); c
+m1 <- round(3.42*c/(minimum_estimable_lscale/Lstar[1])); m1
+m2 <- round(3.42*c/(minimum_estimable_lscale/Lstar[2])); m2
+mstar <- m1*m2; mstar
+
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -59,15 +70,6 @@ head(lambda)
 #############################################################################
 # Prior elicitation
 #############################################################################
-obsDistMat <- fields::rdist(obsCoords)
-str(obsDistMat)
-obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
-obsMaxDist <- max(obsDistVec)
-obsMedDist <- median(obsDistVec)
-obsMinDist <- min(obsDistVec)
-lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
-rm(obsDistMat)
 
 ## Inverse Gamma for length scale
 library(nleqslv)
@@ -96,8 +98,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 1000,
+                          iter_warmup = 3,
+                          iter_sampling = 3,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

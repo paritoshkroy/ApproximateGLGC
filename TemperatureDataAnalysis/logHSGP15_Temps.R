@@ -12,7 +12,7 @@ fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-load(paste0(fpath,"./TemperatureDataAnalysis/SelectedStatelliteTemps.rda"))
+load(paste0(fpath,"/TemperatureDataAnalysis/SelectedData/SelectedStatelliteTemps.rda"))
 head(selected.sat.temps)
 table(is.na(selected.sat.temps$MaskTemp))  # FALSE are the locations to be used for modeling
 nsite <- nrow(selected.sat.temps); nsite
@@ -43,48 +43,49 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 20
+nNeighbors <- 15
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
 obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
-#############################################################################
-# Prior elicitation
-#############################################################################
+
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 rm(obsDistMat)
 
+#############################################################################
+# Prior elicitation
+#############################################################################
 library(nleqslv)
 ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), from = 0, to = uLimit)
 
 P <- 2
-mu_beta <- c(mean(obsY),rep(0,P))
-V_beta <- diag(c(2.5*var(obsY),rep(1,P)))
-input <- list(N = nsize, K = nNeighbors, P = 2, y = obsY, X = obsX, coords = obsCoords, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_beta = mu_beta, V_beta = V_beta, a = ab[1], b = ab[2])
+mu_theta <- c(mean(obsY),rep(0,P))
+V_theta <- diag(c(2.5*var(obsY),rep(1,P)))
+input <- list(N = nsize, K = nNeighbors, P = 2, y = log(obsY), X = obsX, coords = obsCoords, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2])
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNGP.stan")
+stan_file <- paste0(fpath,"StanFiles/NNGP_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
+                          iter_warmup = 1500,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25,
                           init = 1)
 elapsed_time <- cmdstan_fit$time()
@@ -96,7 +97,7 @@ sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
 
 ## Posterior summaries
-pars <- c("beta[1]","beta[2]","beta[3]","sigma","ell","tau")
+pars <- c("theta[1]","theta[2]","theta[3]","sigma","ell","tau")
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
 fixed_summary <- fit_summary %>% filter(variable %in% pars)
 fixed_summary %>% print(digits = 3)
@@ -109,70 +110,52 @@ library(bayesplot)
 color_scheme_set("brewer-Spectral")
 mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
 
-## Recovery of random effect z1
-size_post_samples <- nrow(draws_df); size_post_samples
-post_omega <- as_tibble(draws_df) %>% select(starts_with("omega[")) %>% as.matrix() %>% unname(); str(post_omega)
-eigenfunction_compute <- function(x, L, lambda) { 
-  apply(sqrt(1/L) * sin(sqrt(lambda) %*% diag(x + L)), 1, prod)
-}
-obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda)))
-str(obsH)
-post_z <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega[l,])); str(post_z)
-
-z_summary <- tibble(post.mean = apply(post_z, 2, mean),
-                    post.sd = apply(post_z, 2, sd),
-                    post.q2.5 = apply(post_z, 2, quantile2.5),
-                    post.q50 = apply(post_z, 2, quantile50),
-                    post.q97.5 = apply(post_z, 2, quantile97.5))
-z_summary
-
-save(elapsed_time, fixed_summary, draws_df, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSGP_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP15_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
+## Stan function exposed to be used 
+source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
+exsf <- expose_cmdstanr_functions(model_path = stan_file)
+args(exsf$predict_nnnnglgc_rng)
 
-### Random effect z1 at predicted locations
-psize <- nrow(prdCoords); psize
-predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
-post_zpred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega[l,])); str(post_zpred)
-
-zpred_summary <- tibble(
-  post.mean = apply(post_zpred, 2, mean),
-  post.sd = apply(post_zpred, 2, sd),
-  post.q2.5 = apply(post_zpred, 2, quantile2.5),
-  post.q50 = apply(post_zpred, 2, quantile50),
-  post.q97.5 = apply(post_zpred, 2, quantile97.5))
-head(zpred_summary)
-
-### Random effect z at predicted locations
-psize <- nrow(prdCoords); psize
-predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
-post_zpred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega[l,])); str(post_zpred)
-
-zpred_summary <- tibble(
-  post.mean = apply(post_zpred, 2, mean),
-  post.sd = apply(post_zpred, 2, sd),
-  post.q2.5 = apply(post_zpred, 2, quantile2.5),
-  post.q50 = apply(post_zpred, 2, quantile50),
-  post.q97.5 = apply(post_zpred, 2, quantile97.5))
-head(zpred_summary)
-
+size_post_samples <- nrow(draws_df); size_post_samples
 ## Compute the means
-post_beta <- as_tibble(draws_df) %>% select(starts_with("beta[")) %>% as.matrix() %>% unname(); str(post_beta)
-str(post_z)
-
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
 str(obsX)
-str(post_beta)
+str(post_theta)
 l <- 1
-obsXbeta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_beta[l,])); str(obsXbeta)
-prdXbeta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_beta[l,])); str(prdXbeta)
-
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
 post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
-str(post_zpred)
-ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXbeta[l,] + post_zpred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
-str(ypred_draws)
+post_sigma <- as_tibble(draws_df) %>% .$sigma; str(post_sigma)
+post_ell <- as_tibble(draws_df) %>% .$ell; str(post_ell)
 
+## NNGP Preparation
+psize <- nrow(prdCoords); psize
+nei_info_pred <- FNN::get.knnx(obsCoords, prdCoords, k = nNeighbors); str(nei_info_pred)
+pred2obsNeiID <- nei_info_pred$nn.index; str(pred2obsNeiID)
+pred2obsDist <- nei_info_pred$nn.dist; str(pred2obsDist)
+
+args(exsf$predict_vecchia_rng)
+post_logypred <- exsf$predict_vecchia_rng(
+  y = log(obsY), 
+  obsX = obsX, 
+  predX = prdX, 
+  obsCoords = lapply(1:nrow(obsCoords), function(i) obsCoords[i,]),
+  pred2obsDist = lapply(1:nrow(pred2obsDist), function(i) pred2obsDist[i,]), 
+  pred2obsNeiID = lapply(1:nrow(pred2obsNeiID), function(i) pred2obsNeiID[i,]),
+  beta = lapply(1:nrow(post_theta), function(i) post_theta[i,]), 
+  sigma = post_sigma, 
+  lscale = post_ell, 
+  tau = post_tau, 
+  nsize = nsize, 
+  psize = psize, 
+  postsize = size_post_samples)
+
+post_ypred <- lapply(post_logypred, exp)
+ypred_draws <- do.call(rbind,post_ypred); str(ypred_draws)
 pred_summary <- tibble(
   post.mean = apply(ypred_draws, 2, mean),
   post.sd = apply(ypred_draws, 2, sd),
@@ -187,7 +170,6 @@ head(pred_summary)
 id_full_missing <- which(is.na(prdY)); str(id_full_missing)
 library(scoringRules)
 ES <- es_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,]); ES
-VS0.25 <- vs_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,], p = 0.25); VS0.25
 logs <- mean(logs_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,])); logs
 CRPS <- mean(crps_sample(y = prdY[-id_full_missing], dat = t(ypred_draws)[-id_full_missing,])); CRPS
 
@@ -197,9 +179,9 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, VS0.25 = VS0.25, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSGP") %>%
-  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,VS0.25,logs,`Elapsed Time`)
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "logNNGP15") %>%
+  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSGP_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP15_Temps.RData"))
 

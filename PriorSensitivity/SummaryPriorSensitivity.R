@@ -50,19 +50,26 @@ fixed_summary <- fixed_summary %>%
 fixed_summary <- fixed_summary %>% mutate(Prior = factor(Prior, labels = c("Prior Set 1", "Prior Set 2", "Prior Set 3"))) %>% mutate(Method = factor(Method, labels = c("NNNN","NNHS","HSHS")))
 
 ggplot(fixed_summary, aes(x = Method, group = Prior)) + 
-  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`, col = Prior), width = 0.25,
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`, linetype = Prior), width = 0.10,
                 position=position_dodge(0.5), stat="identity") + 
-  geom_hline(aes(yintercept = true), linetype = "dotted", linewidth = 0.5) +
-  facet_wrap(~Pars, scales = "free_y", labeller = label_parsed) +
+  geom_hline(aes(yintercept = true), linetype = "dotdash", linewidth = 0.5) +
+  facet_wrap(~Pars, scales = "free_y", labeller = label_parsed, nrow = 2) +
   theme_bw() +
   xlab("") +
-  ylab("Posterior median (95% CI)") +
+  ylab("Posterior 95% CI") +
   theme(panel.grid = element_blank(),
         strip.background = element_blank(),
-        strip.text = element_text(size = 12))
-ggsave(filename = "PriorSensitivity.png", height = 5, width = 9)
+        strip.text = element_text(size = 13),
+        axis.text = element_text(size = 11),
+        legend.title = element_blank(),
+        legend.position = c(0.9,0.25))
+ggsave(filename = "PriorSensitivity.png", height = 5, width = 11)
 
 library(tidyverse)
 fixed_summary %>% group_by(Method,Prior) %>% summarise(`Elapsed Time` = min(`Elapsed Time (in minutes)`)) %>%  arrange(`Elapsed Time`)
+
+
+scores_df <- do.call(rbind, scores_list)
+
 
 

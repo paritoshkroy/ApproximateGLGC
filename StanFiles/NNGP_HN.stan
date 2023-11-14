@@ -139,20 +139,19 @@ data {
   array[N - 1, K] int neiID;
   matrix[N - 1, K] site2neiDist;
   matrix[N - 1, (K * (K - 1)) %/% 2] neiDistMat;
-  vector[P + 1] mu_beta;
-  matrix[P + 1, P + 1] V_beta;
+  vector[P + 1] mu_theta;
+  matrix[P + 1, P + 1] V_theta;
   real a;
   real b;
 }
 
 transformed data {
-  cholesky_factor_cov[P + 1] chol_V_beta;
-  chol_V_beta = cholesky_decompose(V_beta);
+  cholesky_factor_cov[P + 1] chol_V_theta;
+  chol_V_theta = cholesky_decompose(V_theta);
 }
 
 parameters{
-  vector[P + 1] beta_std;
-  real<lower = 0> gamma;
+  vector[P + 1] theta_std;
   real<lower = 0> sigma;
   real<lower = 0> ell;
   real<lower = 0> tau;
@@ -160,17 +159,17 @@ parameters{
 }
 
 transformed parameters{
-  // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
-  vector[P + 1] beta = mu_beta + chol_V_beta * beta_std;
+  // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
+  vector[P + 1] theta = mu_theta + chol_V_theta * theta_std;
 }
 
 model {
-  beta_std ~ std_normal();
+  theta_std ~ std_normal();
   sigma ~ std_normal();
   ell ~ inv_gamma(a,b);
   tau ~ std_normal();
   noise ~ std_normal();
-  y ~ vecchia_matern32(X * beta, square(sigma), square(tau), ell, site2neiDist, neiDistMat, neiID, N, K);
+  y ~ vecchia_matern32(X * theta, square(sigma), square(tau), ell, site2neiDist, neiDistMat, neiID, N, K);
 }
 
 generated quantities {
