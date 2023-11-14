@@ -27,36 +27,38 @@ cat("The seed used to be ", node, "\n")
 ##########################################################################
 vector_lscale <- seq(0.10,0.50,l=5); vector_lscale
 vector_c <- pmax(1.3, round(4.5*vector_lscale, 2)); vector_c
-vector_c <- 1 + 1.5*vector_lscale; vector_c
+vector_c <- 1 + 2*vector_lscale; vector_c
 
 vector_m1 <- round(3.42*vector_c/vector_lscale,0); vector_m1
-vector_m1 <- rep(22,length(vector_c)); vector_m1
+vector_m1 <- rep(20,length(vector_c)); vector_m1
 setup1 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m1)
 setup1
 
 vector_m2 <- round(3.42*vector_c/vector_lscale,0); vector_m2
-vector_m2 <- rep(28,length(vector_c)); vector_m2
+vector_m2 <- rep(25,length(vector_c)); vector_m2
 setup2 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m2)
 setup2
 
 vector_m3 <- round(3.42*vector_c/vector_lscale,0); vector_m3
-vector_m3 <- rep(34,length(vector_c)); vector_m3
+vector_m3 <- rep(30,length(vector_c)); vector_m3
 setup3 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m3)
 setup3
 
 vector_m4 <- round(3.42*vector_c/vector_lscale,0); vector_m4
-vector_m4 <- rep(39,length(vector_c)); vector_m4
+vector_m4 <- rep(40,length(vector_c)); vector_m4
 setup4 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m4)
 setup4
 
 vector_m5 <- round(3.42*vector_c/vector_lscale,0); vector_m5
-vector_m5 <- rep(50,length(vector_c)); vector_m4
+vector_m5 <- rep(50,length(vector_c)); vector_m5
 setup5 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m5)
 setup5
 
 setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
 setup %>% print(n = nrow(setup))
 setup %>% filter(lscale == 0.2)
+setup %>% filter(lscale == 0.1)
+setup %>% filter(lscale == 0.5)
 ##########################################################################
 # Data generation
 ##########################################################################
