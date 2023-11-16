@@ -9,10 +9,10 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ExactVsApproximateMethods/data_generation.R"))
+source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set4.R"))
 
 # partition as observed and predicted
 obsCoords <- coords[idSampled,]
@@ -40,17 +40,14 @@ rm(obsDistMat)
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-
 quantile(obsDistVec, probs = c(1,2.5,52,50)/100)
-min_indentifiable_lscale <- 0.12
-c <- 1.2 + min_indentifiable_lscale; c
-c <- pmax(1.3, 4.5*min_indentifiable_lscale); c # Previously it was c = 1.2
-c <- 1.5
-c <- 1 + 2*0.5; c
-m1 <- round(3.42*c/min_indentifiable_lscale); m1
-m2 <- round(3.42*c/min_indentifiable_lscale); m2
-m1 <- 22
-m2 <- 22
+
+ell_hat <- 0.5
+c <- 1 + 2*ell_hat; c
+c <- pmax(1.2, 4.5*ell_hat); c
+
+m1 <- pmax(22,round(3.42*c/ell_hat)); m1
+m2 <- pmax(22,round(3.42*c/ell_hat)); m2
 mstar <- m1*m2; mstar
 
 L <- c*Lstar; L
@@ -96,8 +93,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 3,
-                          iter_sampling = 3,
+                          iter_warmup = 500,
+                          iter_sampling = 500,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -115,11 +112,6 @@ fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5
 # cmdstan_fit$summary(variables = pars, posterior::default_summary_measures()[1:4], quantiles = ~ quantile(., probs = c(0.025, 0.975)), posterior::default_convergence_measures())
 fixed_summary <- inner_join(pars_true_df, fit_summary)
 fixed_summary %>% print(digits = 3)
-
-summarise_draws(cmdstan_fit$draws(format = "df"), mean, sd, median,  ~quantile(.x, probs = c(0.025, 0.975)))
-
-cmdstan_fit$cmdstan_summary()
-
 
 ## Posterior draws
 draws_df <- cmdstan_fit$draws(format = "df")
@@ -179,7 +171,7 @@ z_summary <- tibble(z = z[idSampled],
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_GLGC.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet4.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -257,9 +249,9 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSHS_GLGC") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSHS_DataSet4") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_GLGC.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet4.RData"))
 
