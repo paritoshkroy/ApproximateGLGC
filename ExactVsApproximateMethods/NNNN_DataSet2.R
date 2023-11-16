@@ -15,7 +15,7 @@ fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 # Generating the data
 ######################################################################
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set1.R"))
+source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set2.R"))
 
 ######################################################################
 # partition as observed and predicted
