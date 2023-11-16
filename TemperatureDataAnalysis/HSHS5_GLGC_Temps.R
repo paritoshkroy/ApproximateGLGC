@@ -60,7 +60,7 @@ minimum_estimable_lscale <- 0.25*Lstar; minimum_estimable_lscale
 c <- pmax(1.10,4.75*(minimum_estimable_lscale/min(Lstar))); c
 c <- 1.10
 0.10*Lstar
-c <- round(1 + 0.10/Lstar, 2); c
+c <- round(1 + 2*0.05/Lstar, 2); c
 m1 <- round(3.42*c/(minimum_estimable_lscale/Lstar[1])); m1
 m2 <- round(3.42*c/(minimum_estimable_lscale/Lstar[2])); m2
 m1 <- 50

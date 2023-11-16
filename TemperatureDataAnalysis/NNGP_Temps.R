@@ -43,7 +43,7 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
+nNeighbors <- 5
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -82,8 +82,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
-                          iter_sampling = 1000,
+                          iter_warmup = 50,
+                          iter_sampling = 50,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25,
@@ -98,9 +98,10 @@ str(sampler_diag)
 
 ## Posterior summaries
 pars <- c("theta[1]","theta[2]","theta[3]","sigma","ell","tau")
-fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
+fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_basic","ess_bulk","ess_tail"))
 fixed_summary <- fit_summary %>% filter(variable %in% pars)
 fixed_summary %>% print(digits = 3)
+#cmdstan_fit$cmdstan_summary()
 
 ## Posterior draws
 draws_df <- cmdstan_fit$draws(format = "df")

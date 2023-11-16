@@ -216,21 +216,21 @@ ggsave(filename = "./Rutilities/Computational_Complexity_Plots.png", height = 7,
 
 
 ## c = 1.20
-vector_lscale <- seq(0.1,0.5,l=9); vector_lscale
+vector_lscale <- seq(0.05,0.5,l=10); vector_lscale
 round(4.5*vector_lscale,2)
 vector_c <- pmax(1.20, round(4.5*vector_lscale,2)); vector_c
-vector_c <- 1 + 1.5*vector_lscale; vector_c
-cbind(vector_lscale, vector_c, round(3.42*vector_c/vector_lscale,0))
-vector_m1 <- pmax(20,round(3.42*vector_c/vector_lscale,0)); vector_m1
-vector_m2 <- pmax(22,round(3.42*vector_c/vector_lscale,0)); vector_m2
-vector_m3 <- pmax(25,round(3.42*vector_c/vector_lscale,0)); vector_m3
-vector_m4 <- pmax(28,round(3.42*vector_c/vector_lscale,0)); vector_m4
-vector_m5 <- pmax(34,round(3.42*vector_c/vector_lscale,0)); vector_m5
-vector_m6 <- pmax(39,round(3.42*vector_c/vector_lscale,0)); vector_m6
-vector_m7 <- pmax(50,round(3.42*vector_c/vector_lscale,0)); vector_m7
+#vector_c <- 1 + 1.5*vector_lscale; vector_c
+cbind(vector_lscale, vector_c, m = ceiling(3.42*vector_c/vector_lscale))
+vector_m1 <- pmax(16,ceiling(3.42*vector_c/vector_lscale)); vector_m1
+vector_m2 <- pmax(17,ceiling(3.42*vector_c/vector_lscale)); vector_m2
+vector_m3 <- pmax(21,ceiling(3.42*vector_c/vector_lscale)); vector_m3
+vector_m4 <- pmax(28,ceiling(3.42*vector_c/vector_lscale)); vector_m4
+vector_m5 <- pmax(42,ceiling(3.42*vector_c/vector_lscale)); vector_m5
+vector_m6 <- pmax(83,ceiling(3.42*vector_c/vector_lscale)); vector_m6
+
 
 library(tidyverse)
-setup <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m2 = vector_m2, m3 = vector_m3, m4 = vector_m4, m5 = vector_m5, m6 = vector_m6, m7 = vector_m7)
+setup <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m2 = vector_m2, m3 = vector_m3, m4 = vector_m4, m5 = vector_m5, m6 = vector_m6)
 setup <- setup %>% gather(x,m,-c,-lscale) %>% select(-x) %>% distinct()
 setup
 table(setup$m)
@@ -259,7 +259,7 @@ setup %>%
         strip.text = element_text(size = 13),
         panel.grid = element_blank(),
         legend.title = element_blank(),
-        legend.position = c(0.90,0.25),
+        legend.position = c(0.07,0.87),
         axis.text.y = element_blank(),
         axis.text.x = element_text(size = 11),
         axis.ticks.y = element_blank())

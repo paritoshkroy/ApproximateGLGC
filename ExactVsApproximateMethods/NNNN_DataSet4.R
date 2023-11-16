@@ -9,13 +9,13 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 ######################################################################
 # Generating the data
 ######################################################################
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ExactVsApproximateMethods/data_generation.R"))
+source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set1.R"))
 
 ######################################################################
 # partition as observed and predicted
@@ -94,6 +94,7 @@ cmdstan_fit <- mod$sample(data = input,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
+
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
@@ -101,6 +102,8 @@ elapsed_time$total/3600
 cmdstan_fit$cmdstan_diagnose()
 sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
+table(sampler_diag$divergent__)
+max(sampler_diag$treedepth__)
 
 ## Posterior summaries
 pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
@@ -143,7 +146,7 @@ z1_summary <- tibble(z1 = obsZ1,
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_GLGC.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet4.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -213,9 +216,10 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNNN_GLGC") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNNN_DataSet4") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_GLGC.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet4.RData"))
+
 

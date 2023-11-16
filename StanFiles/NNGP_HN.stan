@@ -155,7 +155,6 @@ parameters{
   real<lower = 0> sigma;
   real<lower = 0> ell;
   real<lower = 0> tau;
-  vector[N] noise;
 }
 
 transformed parameters{
@@ -168,7 +167,6 @@ model {
   sigma ~ std_normal();
   ell ~ inv_gamma(a,b);
   tau ~ std_normal();
-  noise ~ std_normal();
   y ~ vecchia_matern32(X * theta, square(sigma), square(tau), ell, site2neiDist, neiDistMat, neiID, N, K);
 }
 

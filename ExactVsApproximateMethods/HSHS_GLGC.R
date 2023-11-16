@@ -49,8 +49,8 @@ c <- 1.5
 c <- 1 + 2*0.5; c
 m1 <- round(3.42*c/min_indentifiable_lscale); m1
 m2 <- round(3.42*c/min_indentifiable_lscale); m2
-m1 <- 25
-m2 <- 25
+m1 <- 22
+m2 <- 22
 mstar <- m1*m2; mstar
 
 L <- c*Lstar; L
@@ -96,8 +96,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 3,
+                          iter_sampling = 3,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -112,12 +112,18 @@ str(sampler_diag)
 pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
 pars_true_df <- tibble(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
+# cmdstan_fit$summary(variables = pars, posterior::default_summary_measures()[1:4], quantiles = ~ quantile(., probs = c(0.025, 0.975)), posterior::default_convergence_measures())
 fixed_summary <- inner_join(pars_true_df, fit_summary)
 fixed_summary %>% print(digits = 3)
 
+summarise_draws(cmdstan_fit$draws(format = "df"), mean, sd, median,  ~quantile(.x, probs = c(0.025, 0.975)))
+
+cmdstan_fit$cmdstan_summary()
+
+
 ## Posterior draws
 draws_df <- cmdstan_fit$draws(format = "df")
-draws_df
+class(draws_df)
 
 library(bayesplot)
 color_scheme_set("brewer-Spectral")
