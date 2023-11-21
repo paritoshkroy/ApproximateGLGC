@@ -26,7 +26,7 @@ cat("The seed used to be ", node, "\n")
 # Setup for the simulation study
 ##########################################################################
 vector_lscale <- seq(0.10,0.50,l=5); vector_lscale
-vector_c <- pmax(1.3, round(4.5*vector_lscale, 2)); vector_c
+vector_c <- pmax(1.2, round(4.5*vector_lscale, 2)); vector_c
 vector_c <- 1 + 2*vector_lscale; vector_c
 
 vector_m1 <- round(3.42*vector_c/vector_lscale,0); vector_m1
