@@ -141,6 +141,8 @@ data {
   matrix[N - 1, (K * (K - 1)) %/% 2] neiDistMat;
   vector[P] mu_theta;
   matrix[P, P] V_theta;
+  real<lower=0> lambda_sigma;
+  real<lower=0> lambda_tau;
   real a;
   real b;
 }
@@ -164,9 +166,9 @@ transformed parameters{
 
 model {
   theta_std ~ std_normal();
-  sigma ~ std_normal();
+  sigma ~ exponential(lambda_sigma);
   ell ~ inv_gamma(a,b);
-  tau ~ std_normal();
+  tau ~ exponential(lambda_tau);
   y ~ vecchia_matern32(X * theta, square(sigma), square(tau), ell, site2neiDist, neiDistMat, neiID, N, K);
 }
 

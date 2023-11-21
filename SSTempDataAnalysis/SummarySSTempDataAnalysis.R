@@ -82,4 +82,77 @@ scores_df <- scores_df %>%
 
 scores_df %>% select(MethodFactor, MAE, RMSE, CVG, CRPS, IS, ES, logs, `Elapsed Time`) %>% arrange(MethodFactor) %>% xtable::xtable()
 
+##
+rm(list=ls())
+load("~/git/ApproximateGLGC/SSTempDataAnalysis/NNGP_SST.RData")
+str(prdGrid)
+NNGPPred <- st_sf(prdGrid) %>% 
+  mutate(x = st_coordinates(prdGrid)[,1]) %>% 
+  mutate(y = st_coordinates(prdGrid)[,2]) %>% 
+  mutate(post_mean = pred_summary$post.mean) %>%
+  mutate(post_sd = pred_summary$post.sd) %>%
+  mutate(Model = 1)
+lpNNGP <- summary(draws_df$lp__)
 
+load("~/git/ApproximateGLGC/SSTempDataAnalysis/logNNGP_SST.RData")
+str(prdGrid)
+logNNGPPred <- st_sf(prdGrid) %>% 
+  mutate(x = st_coordinates(prdGrid)[,1]) %>% 
+  mutate(y = st_coordinates(prdGrid)[,2]) %>% 
+  mutate(post_mean = pred_summary$post.mean) %>%
+  mutate(post_sd = pred_summary$post.sd) %>%
+  mutate(Model = 2)
+lplogNNGP <- summary(draws_df$lp__)
+
+load("~/git/ApproximateGLGC/SSTempDataAnalysis/HSHS_GLGC_SST.RData")
+str(prdGrid)
+HSHSPred <- st_sf(prdGrid) %>% 
+  mutate(x = st_coordinates(prdGrid)[,1]) %>% 
+  mutate(y = st_coordinates(prdGrid)[,2]) %>% 
+  mutate(post_mean = pred_summary$post.mean) %>%
+  mutate(post_sd = pred_summary$post.sd) %>%
+  mutate(Model = 3)
+lpHSHS <- summary(draws_df$lp__)
+
+rbind(lpNNGP, lplogNNGP, lpHSHS)
+
+PredDF <- rbind(NNGPPred, logNNGPPred, HSHSPred)
+PredDF <- PredDF %>% mutate(Model = factor(Model, labels = c("NNGP","logNNGP","HSHS")))
+ggp <- gridExtra::grid.arrange(
+  
+  ggplot(PredDF) + 
+    geom_raster(aes(x = x, y = y, fill = post_mean)) + 
+    scale_fill_distiller(palette = 'Spectral') +
+    facet_wrap(~Model, nrow = 1) +
+    coord_equal()+
+    theme_void() +
+    theme(legend.title = element_blank(),
+          panel.grid = element_blank(),
+          legend.key.height = unit(0.7, 'cm'), 
+          legend.position = "right"),
+  
+  ggplot(PredDF) + 
+    geom_raster(aes(x = x, y = y, fill = post_sd)) + 
+    scale_fill_distiller(palette = 'Spectral') +
+    facet_wrap(~Model, nrow = 1) +
+    coord_equal()+
+    theme_void() +
+    theme(legend.title = element_blank(),
+          panel.grid = element_blank(),
+          legend.key.height = unit(0.7, 'cm'), 
+          legend.position = "right"),
+  ncol = 1)
+ggp
+ggsave(plot = ggp, filename = "./SSTempDataAnalysis/SST_Prediction_MeasnSD.png", height = 4, width = 10)
+
+
+## HSGP
+A tibble: 6 × 9
+variable    mean     sd   `50%`   `2.5%` `97.5%`  rhat ess_bulk ess_tail
+<chr>      <num>  <num>   <num>    <num>   <num> <num>    <num>    <num>
+1 sigma     0.506  0.175   0.490   0.203     0.902  1.00     539.     895.
+2 tau       1.81   0.0488  1.81    1.71      1.91   1.00    3298.    1543.
+3 ell       2.74   0.890   2.60    1.48      4.86   1.00    1945.    1603.
+4 theta[1] 18.3    0.249  18.3    17.9      18.8    1.00    2388.    1473.
+5 theta[2]  0.0655 0.0382  0.0617  0.00154   0.151  1.00    1638.    1222.
+6 theta[3] -0.397  0.0946 -0.405  -0.565    -0.188  1.00    1906.    1401.

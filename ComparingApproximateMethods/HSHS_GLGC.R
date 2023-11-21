@@ -56,10 +56,12 @@ rm(obsDistMat)
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 32; m2 <- 32; mstar <- m1*m2
-Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-c <- c(1.5,1.5)
-L <- c*Lstar
+Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat))); Lstar
+c <- 1.58
+m1 <- pmax(25,ceiling(3.42*c/(0.35/Lstar[1]))); m1
+m2 <- pmax(25,ceiling(3.42*c/(0.35/Lstar[2]))); m2
+mstar <- m1*m2; mstar
+L <- c*Lstar; L
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
 str(S)
@@ -69,9 +71,7 @@ head(lambda)
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
-lLimit <- min(obsDistVec)*2; lLimit # Practical range should not be lower than min distance
-uLimit <- max(obsDistVec)/2; uLimit # Practical range should not be greater than max distance
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
@@ -105,8 +105,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 300,
+                          iter_sampling = 300,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)

@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 load(paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
@@ -39,7 +39,7 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 5
+nNeighbors <- 10
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -50,8 +50,7 @@ obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhoo
 lLimit <- quantile(obsDistVec, prob = 0.05); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
-lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
-lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+lambda_sigma <- -log(0.01)/1; lambda_sigma
 lambda_tau <- -log(0.01)/1; lambda_tau
 pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 
@@ -65,19 +64,19 @@ mu_theta <- c(mean(obsY),rep(0,P-1))
 V_theta <- diag(c(10,rep(1,P-1)))
 
 # Keep in mind that the data should be ordered following nearest neighbor settings
-input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], positive_skewness = 0)
+input <- list(N = nsize, K = nNeighbors, P = P, y = log(obsY), X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma = lambda_sigma, lambda_tau = lambda_tau, a = ab[1], b = ab[2])
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/NNGP_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 500,
+                          iter_sampling = 500,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -90,7 +89,7 @@ sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
 
 ## Posterior summaries
-pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
+pars <- c(paste0("theta[",1:P,"]"),"sigma","ell","tau")
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
 fixed_summary <- fit_summary %>% filter(variable %in% pars)
 fixed_summary %>% print(digits = 3)
@@ -103,49 +102,17 @@ library(bayesplot)
 color_scheme_set("brewer-Spectral")
 mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
 
-## Stan function exposed to be used 
-source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
-exsf <- expose_cmdstanr_functions(model_path = stan_file)
-args(exsf$predict_nnnnglgc_rng)
-
-## Recovery of random effect z1
 size_post_samples <- nrow(draws_df); size_post_samples
-post_noise1 <- as_tibble(draws_df) %>% select(starts_with("noise1[")) %>% as.matrix() %>% unname(); str(post_noise1)
-post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
-post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
-post_z1 <- array(0, dim = c(size_post_samples,nsize)); str(post_z1)
-l <- 1
-for(l in 1:size_post_samples){
-  post_z1[l,] <- exsf$latent_nngp_matern32_stuff(noise = post_noise1[l,], sigmasq = post_sigma1[l]^2, lscale = post_ell1[l], site2neiDist = input$site2neiDist, neiDistMat = input$neiDistMat, neiID = lapply(1:nrow(input$neiID), function(l) input$neiID[l,]), N = input$N, K = input$K)
-}
-str(post_z1)
-
-z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
-                     post.sd = apply(post_z1, 2, sd),
-                     post.q2.5 = apply(post_z1, 2, quantile2.5),
-                     post.q50 = apply(post_z1, 2, quantile50),
-                     post.q97.5 = apply(post_z1, 2, quantile97.5))
-z1_summary
-
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"SSTempDataAnalysis/NNNN_GLGC_SST.RData"))
+post_ell <- as_tibble(draws_df) %>% .$ell; str(post_ell)
+post_sigma <- as_tibble(draws_df) %>% .$sigma; str(post_sigma)
+save(elapsed_time, fixed_summary, draws_df, file = paste0(fpath,"SSTempDataAnalysis/logNNGP_GP_SST.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
-size_post_samples <- nrow(draws_df); size_post_samples
-psize <- nrow(prdCoords); psize
-
-post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
-post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
-post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
-post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
-post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
-post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
-post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
-str(post_z1)
-
-str(obsX)
-str(post_theta)
+source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
+exsf <- expose_cmdstanr_functions(model_path = stan_file)
+args(exsf$predict_fullgp_rng)
 
 ## NNGP Preparation
 psize <- nrow(prdCoords); psize
@@ -153,25 +120,35 @@ nei_info_pred <- FNN::get.knnx(obsCoords, prdCoords, k = nNeighbors); str(nei_in
 pred2obsNeiID <- nei_info_pred$nn.index; str(pred2obsNeiID)
 pred2obsDist <- nei_info_pred$nn.dist; str(pred2obsDist)
 
-post_ypred <- exsf$predict_nnnnglgc_rng(
-  y = obsY, 
+size_post_samples <- nrow(draws_df); size_post_samples
+psize <- nrow(prdCoords); psize
+post_sigma <- as_tibble(draws_df) %>% .$sigma; str(post_sigma)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+post_ell <- as_tibble(draws_df) %>% .$ell; str(post_ell)
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+
+str(obsX)
+str(post_theta)
+
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
+args(exsf$predict_vecchia_rng)
+post_logypred <- exsf$predict_vecchia_rng(
+  y = log(obsY), 
   obsX = obsX, 
-  predX = prdX, 
+  predX = prdX,
   obsCoords = lapply(1:nrow(obsCoords), function(i) obsCoords[i,]),
   pred2obsDist = lapply(1:nrow(pred2obsDist), function(i) pred2obsDist[i,]), 
   pred2obsNeiID = lapply(1:nrow(pred2obsNeiID), function(i) pred2obsNeiID[i,]),
   beta = lapply(1:nrow(post_theta), function(i) post_theta[i,]), 
-  z1 = lapply(1:nrow(post_z1), function(i) post_z1[i,]), 
-  gamma = post_gamma, 
-  sigma1 = post_sigma1, 
-  sigma2 = post_sigma2, 
-  lscale1 = post_ell1, 
-  lscale2 = post_ell2, 
+  sigma = post_sigma,
+  lscale = post_ell, 
   tau = post_tau, 
   nsize = nsize, 
-  psize = psize, 
+  psize = psize,
   postsize = size_post_samples)
 
+post_ypred <- lapply(post_logypred,exp)
 ypred_draws <- do.call(rbind,post_ypred); str(ypred_draws)
 pred_summary <- tibble(
   post.mean = apply(ypred_draws, 2, mean),
@@ -181,7 +158,7 @@ pred_summary <- tibble(
   post.q97.5 = apply(ypred_draws, 2, quantile97.5))
 pred_summary
 
-save(elapsed_time, sampler_diag, fixed_summary, draws_df, z1_summary, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/NNNN_GLGC_SST.RData"))
+save(elapsed_time, prdGrid, fixed_summary, draws_df, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/logNNGP_SST.RData"))
 
 str(prdGrid)
 prdGrid <- st_sf(prdGrid) %>% mutate(post_mean = pred_summary$post.mean)
@@ -212,4 +189,4 @@ ggp <- gridExtra::grid.arrange(
           legend.position = "right"),
   ncol = 2)
 ggp
-ggsave(plot = ggp, filename = "./SSTempDataAnalysis/NNGP_SST_Prediction_MeasnSD.png", height = 3, width = 12)
+ggsave(plot = ggp, filename = "./SSTempDataAnalysis/logNNGP_SST_Prediction_MeasnSD.png", height = 3, width = 12)

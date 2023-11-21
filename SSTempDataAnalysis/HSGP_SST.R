@@ -67,8 +67,7 @@ ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 
 ## Exponential prior for SD
-lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
-lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+lambda_sigma <- -log(0.01)/1; lambda_sigma
 lambda_tau <- -log(0.01)/1; lambda_tau
 pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 
@@ -76,11 +75,11 @@ head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 0)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma = lambda_sigma, lambda_tau = lambda_tau)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/HSGP_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -101,7 +100,7 @@ sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
 str(sampler_diag)
 
 ## Posterior summaries
-pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
+pars <- c(paste0("theta[",1:P,"]"),"sigma","ell","tau")
 fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
 fixed_summary <- fit_summary %>% filter(variable %in% pars)
 fixed_summary %>% print(digits = 3)
@@ -114,52 +113,24 @@ library(bayesplot)
 color_scheme_set("brewer-Spectral")
 mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
 
-## Recovery of random effect z1
+## Recovery of random effect z
 size_post_samples <- nrow(draws_df); size_post_samples
-post_omega1 <- as_tibble(draws_df) %>% select(starts_with("omega1[")) %>% as.matrix() %>% unname(); str(post_omega1)
+post_omega <- as_tibble(draws_df) %>% select(starts_with("omega[")) %>% as.matrix() %>% unname(); str(post_omega)
 eigenfunction_compute <- function(x, L, lambda) { 
   apply(sqrt(1/L) * sin(sqrt(lambda) %*% diag(x + L)), 1, prod)
 }
 obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda)))
 str(obsH)
-post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega1[l,])); str(post_z1)
+post_z <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega[l,])); str(post_z)
 
-z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
-                     post.sd = apply(post_z1, 2, sd),
-                     post.q2.5 = apply(post_z1, 2, quantile2.5),
-                     post.q50 = apply(post_z1, 2, quantile50),
-                     post.q97.5 = apply(post_z1, 2, quantile97.5))
-z1_summary
-
-
-## Recovery of random effect z2
-size_post_samples <- nrow(draws_df); size_post_samples
-post_omega2 <- as_tibble(draws_df) %>% select(starts_with("omega2[")) %>% as.matrix() %>% unname(); str(post_omega2)
-obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda)))
-str(obsH)
-post_z2 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega2[l,])); str(post_z2)
-
-z2_summary <- tibble(post.mean = apply(post_z2, 2, mean),
-                     post.sd = apply(post_z2, 2, sd),
-                     post.q2.5 = apply(post_z2, 2, quantile2.5),
-                     post.q50 = apply(post_z2, 2, quantile50),
-                     post.q97.5 = apply(post_z2, 2, quantile97.5))
-z2_summary
-
-## Recovery of z <- gamma*exp(z1) + z2
-size_post_samples <- nrow(draws_df); size_post_samples
-post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
-str(post_z1)
-str(post_z2)
-l <- 1
-post_z <- t(sapply(1:size_post_samples, function(l) post_gamma[l]*exp(post_z1[l,]) + post_z2[l,])); str(post_z)
 z_summary <- tibble(post.mean = apply(post_z, 2, mean),
-                    post.sd = apply(post_z, 2, sd),
-                    post.q2.5 = apply(post_z, 2, quantile2.5),
-                    post.q50 = apply(post_z, 2, quantile50),
-                    post.q97.5 = apply(post_z, 2, quantile97.5))
+                     post.sd = apply(post_z, 2, sd),
+                     post.q2.5 = apply(post_z, 2, quantile2.5),
+                     post.q50 = apply(post_z, 2, quantile50),
+                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, file = paste0(fpath,"SSTempDataAnalysis/HSHS_GLGC_SST.RData"))
+
+save(elapsed_time, fixed_summary, draws_df, z_summary, post_z, file = paste0(fpath,"SSTempDataAnalysis/HSGP_SST.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -167,34 +138,19 @@ save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, p
 ## Random effect z1 at predicted locations
 psize <- nrow(prdCoords); psize
 predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
-post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,])); str(post_z1pred)
+post_zpred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega[l,])); str(post_zpred)
 
-z1pred_summary <- tibble(
-  post.mean = apply(post_z1pred, 2, mean),
-  post.sd = apply(post_z1pred, 2, sd),
-  post.q2.5 = apply(post_z1pred, 2, quantile2.5),
-  post.q50 = apply(post_z1pred, 2, quantile50),
-  post.q97.5 = apply(post_z1pred, 2, quantile97.5))
-z1pred_summary
-
-### Random effect z2 at predicted locations
-psize <- nrow(prdCoords); psize
-predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
-post_z2pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega2[l,])); str(post_z2pred)
-
-z2pred_summary <- tibble(
-  post.mean = apply(post_z2pred, 2, mean),
-  post.sd = apply(post_z2pred, 2, sd),
-  post.q2.5 = apply(post_z2pred, 2, quantile2.5),
-  post.q50 = apply(post_z2pred, 2, quantile50),
-  post.q97.5 = apply(post_z2pred, 2, quantile97.5))
-z2pred_summary
+zpred_summary <- tibble(
+  post.mean = apply(post_zpred, 2, mean),
+  post.sd = apply(post_zpred, 2, sd),
+  post.q2.5 = apply(post_zpred, 2, quantile2.5),
+  post.q50 = apply(post_zpred, 2, quantile50),
+  post.q97.5 = apply(post_zpred, 2, quantile97.5))
+zpred_summary
 
 ## Compute the means
 post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
 str(post_z)
-str(post_z1)
-str(post_z2)
 
 str(obsX)
 str(post_theta)
@@ -203,10 +159,8 @@ obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,]))
 prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
 
 post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
-post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
-str(post_z1pred)
-str(post_z2pred)
-ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXtheta[l,] + post_gamma[l] * exp(post_z1pred[l,]) + post_z2pred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
+str(post_zpred)
+ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXtheta[l,] + post_zpred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
 str(ypred_draws)
 
 pred_summary <- tibble(
@@ -218,7 +172,7 @@ pred_summary <- tibble(
 pred_summary
 
 
-save(m1, m2, prdGrid, mstar, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/HSHS_GLGC_SST.RData"))
+save(m1, m2, prdGrid, mstar, elapsed_time, fixed_summary, draws_df, z_summary, post_z, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/HSGP_SST.RData"))
 
 str(prdGrid)
 prdGrid <- st_sf(prdGrid) %>% mutate(post_mean = pred_summary$post.mean)
@@ -249,5 +203,5 @@ ggp <- gridExtra::grid.arrange(
           legend.position = "right"),
   ncol = 2)
 ggp
-ggsave(plot = ggp, filename = "./SSTempDataAnalysis/HSHS_SST_Prediction_MeasnSD.png", height = 2.5, width = 9)
+ggsave(plot = ggp, filename = "./SSTempDataAnalysis/HSGP_SST_Prediction_MeasnSD.png", height = 2.5, width = 9)
 
