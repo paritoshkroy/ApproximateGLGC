@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 ######################################################################
 # Generating the data
