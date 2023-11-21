@@ -21,7 +21,7 @@ yMidRange <- mean(yRange);yMidRange
 
 dt <- read_csv(paste0(fpath,"SSTempDataAnalysis/SelectedData/3504026.csv"))
 dt %>% group_by(SST_MM) %>% count()
-dt <- dt %>% filter(!is.na(SST_MM)) #%>% filter(SST_MM != 0)
+#dt <- dt %>% filter(!is.na(SST_MM)) %>% filter(SST_MM != 0)
 dt <- dt %>% mutate(date = as.Date(DATE)) %>% select(date,LONGITUDE,LATITUDE,SEA_SURF_TEMP)
 dt <- dt %>% drop_na()
 dt %>% distinct(LONGITUDE,LATITUDE)
@@ -74,14 +74,12 @@ ggsave(filename = "./SSTempDataAnalysis/SelectedData/SSTempResidualsDistribution
 
 msst_df <- dt_shp_sf %>% st_drop_geometry()
 nsite <- nrow(msst_df); nsite
-#nsize <- ceiling(nsite*0.90); nsize #1500
-nsize <- nsite
-#psize <- nsite - nsize; psize
-#idSampled <- 1:nsize
+nsize <- 1000
+psize <- nsite - nsize; psize
 
-#set.seed(911)
-#idSampled <- sample.int(n = nsite, size = nsize, replace = FALSE)
-#set.seed(NULL)
+set.seed(100)
+idSampled <- sample.int(n = nsite, size = nsize, replace = FALSE)
+set.seed(NULL)
 ####################################################################################
 ## Changing the spatial domain
 ####################################################################################
@@ -98,7 +96,7 @@ msst_df <- msst_df %>%
 apply(msst_df[,c("relocateLon","relocateLat")], 2, range)
 
 coords <- msst_df %>% select(lon,lat) %>% as.matrix() %>% unname()
-obsCoords <- msst_df %>% select(relocateLon,relocateLat) %>% as.matrix() %>% unname()
+coords <- msst_df %>% select(relocateLon,relocateLat) %>% as.matrix() %>% unname()
 distMat <- fields::rdist(coords)
 distVec <- distMat[lower.tri(distMat, diag = FALSE)]
 abline(v = quantile(distVec, probs = seq(0,1,l = 21)), col = 2)
@@ -115,15 +113,19 @@ m1 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[1])); m1
 m2 <- ceiling(3.42 * c/(minimum_identifiable_lscale/Lstar[2])); m2
 m1*m2
 
+
 ## Create Prediction Grid
-shp2 <- st_make_grid(shp, cellsize = 0.05, crs = st_crs(shp), what = "centers", square = TRUE)
-within <- st_within(shp2 , shp)
-withinTF <- sapply(within, function(xx) length(xx)!=0)
-prdGrid <- shp2[withinTF]
-str(prdGrid)
-prdCoords <- unname(as.matrix(st_coordinates(prdGrid)))
-prdCoords[,1] <-prdCoords[,1] - xMidRange
-prdCoords[,2] <-prdCoords[,2] - yMidRange
-psize <- nrow(prdCoords); psize
-ggplot(shp) + geom_sf() + geom_sf(data = prdGrid, size = 0.2, col = "red", fill = NA)
-save(m1, m2, xRange, yRange, xMidRange, yMidRange, msst_df, obsCoords, prdCoords, prdGrid, psize, file = paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
+#shp2 <- st_make_grid(shp, cellsize = 0.05, crs = st_crs(shp), what = "centers", square = TRUE)
+#within <- st_within(shp2 , shp)
+#withinTF <- sapply(within, function(xx) length(xx)!=0)
+#prdGrid <- shp2[withinTF]
+#str(prdGrid)
+#prdCoords <- unname(as.matrix(st_coordinates(prdGrid)))
+#prdCoords[,1] <-prdCoords[,1] - xMidRange
+#prdCoords[,2] <-prdCoords[,2] - yMidRange
+#psize <- nrow(prdCoords); psize
+#ggplot(shp) + geom_sf() + geom_sf(data = prdGrid, size = 0.2, col = "red", fill = NA)
+save(idSampled, m1, m2, xRange, yRange, xMidRange, yMidRange, msst_df, coords, nsize, psize, file = paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
+
+hist(msst_df$temp[-idSampled])
+hist(msst_df$temp[idSampled])

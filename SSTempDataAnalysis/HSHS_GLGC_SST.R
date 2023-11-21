@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 load(paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
@@ -19,9 +19,12 @@ nsite <- nrow(msst_df); nsite
 #####################################################################
 # Preparing model objects
 #####################################################################
-nsize <- nrow(obsCoords); nsize
+nsize
 psize
-obsY <- msst_df$temp; str(obsY)
+obsY <- msst_df$temp[idSampled]; str(obsY)
+prdY <- msst_df$temp[-idSampled]; str(prdY)
+obsCoords <- coords[idSampled,]; str(obsCoords)
+prdCoords <- coords[-idSampled,]; str(prdCoords)
 obsX <- cbind(1,obsCoords); str(obsX)
 prdX <- cbind(1,prdCoords); str(prdX)
 str(obsCoords)
@@ -87,8 +90,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -210,6 +213,7 @@ ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXtheta[l,] + post_ga
 str(ypred_draws)
 
 pred_summary <- tibble(
+  y = prdY,
   post.mean = apply(ypred_draws, 2, mean),
   post.sd = apply(ypred_draws, 2, sd),
   post.q2.5 = apply(ypred_draws, 2, quantile2.5),
@@ -217,37 +221,21 @@ pred_summary <- tibble(
   post.q97.5 = apply(ypred_draws, 2, quantile97.5))
 pred_summary
 
+## Computation for scoring rules
+library(scoringRules)
+ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
+logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs
+CRPS <- mean(crps_sample(y = prdY, dat = t(ypred_draws))); CRPS
 
-save(m1, m2, prdGrid, mstar, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/HSHS_GLGC_SST.RData"))
+scores_df <- pred_summary %>% 
+  mutate(intervals = scoringutils::interval_score(true_values = y, lower = post.q2.5, upper = post.q50, interval_range = 0.95)) %>%
+  mutate(btw = between(y,post.q2.5, post.q97.5)) %>%
+  mutate(error = y - post.q50) %>%
+  summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
+            IS = mean(intervals)) %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSHS_GLGC") %>%
+  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
+scores_df
 
-str(prdGrid)
-prdGrid <- st_sf(prdGrid) %>% mutate(post_mean = pred_summary$post.mean)
-prdGrid
-prdGrid <- prdGrid %>% mutate(x = st_coordinates(prdGrid)[,1]) %>% mutate(y = st_coordinates(prdGrid)[,2]) 
-prdGrid <- prdGrid %>% mutate(post_sd = pred_summary$post.sd)
-
-ggp <- gridExtra::grid.arrange(
-  
-  ggplot(prdGrid) + 
-    geom_raster(aes(x = x, y = y, fill = post_mean)) + 
-    scale_fill_distiller(palette = 'Spectral') +
-    coord_equal()+
-    theme_void() +
-    theme(legend.title = element_blank(),
-          panel.grid = element_blank(),
-          legend.key.height = unit(0.8, 'cm'), 
-          legend.position = "right"),
-  
-  ggplot(prdGrid) + 
-    geom_raster(aes(x = x, y = y, fill = post_sd)) + 
-    scale_fill_distiller(palette = 'Spectral') +
-    coord_equal()+
-    theme_void() +
-    theme(legend.title = element_blank(),
-          panel.grid = element_blank(),
-          legend.key.height = unit(0.8, 'cm'), 
-          legend.position = "right"),
-  ncol = 2)
-ggp
-ggsave(plot = ggp, filename = "./SSTempDataAnalysis/HSHS_SST_Prediction_MeasnSD.png", height = 2.5, width = 9)
+save(m1, m2, mstar, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"SSTempDataAnalysis/HSHS_GLGC_SST.RData"))
 

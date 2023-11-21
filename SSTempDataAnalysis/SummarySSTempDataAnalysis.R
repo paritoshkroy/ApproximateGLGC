@@ -145,14 +145,3 @@ ggp <- gridExtra::grid.arrange(
 ggp
 ggsave(plot = ggp, filename = "./SSTempDataAnalysis/SST_Prediction_MeasnSD.png", height = 4, width = 10)
 
-
-## HSGP
-A tibble: 6 × 9
-variable    mean     sd   `50%`   `2.5%` `97.5%`  rhat ess_bulk ess_tail
-<chr>      <num>  <num>   <num>    <num>   <num> <num>    <num>    <num>
-1 sigma     0.506  0.175   0.490   0.203     0.902  1.00     539.     895.
-2 tau       1.81   0.0488  1.81    1.71      1.91   1.00    3298.    1543.
-3 ell       2.74   0.890   2.60    1.48      4.86   1.00    1945.    1603.
-4 theta[1] 18.3    0.249  18.3    17.9      18.8    1.00    2388.    1473.
-5 theta[2]  0.0655 0.0382  0.0617  0.00154   0.151  1.00    1638.    1222.
-6 theta[3] -0.397  0.0946 -0.405  -0.565    -0.188  1.00    1906.    1401.

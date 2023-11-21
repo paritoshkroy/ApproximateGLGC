@@ -19,9 +19,12 @@ nsite <- nrow(msst_df); nsite
 #####################################################################
 # Preparing model objects
 #####################################################################
-nsize <- nrow(obsCoords); nsize
+nsize
 psize
-obsY <- msst_df$temp; str(obsY)
+obsY <- msst_df$temp[idSampled]; str(obsY)
+prdY <- msst_df$temp[-idSampled]; str(prdY)
+obsCoords <- coords[idSampled,]; str(obsCoords)
+prdCoords <- coords[-idSampled,]; str(prdCoords)
 obsX <- cbind(1,obsCoords); str(obsX)
 prdX <- cbind(1,prdCoords); str(prdX)
 str(obsCoords)
@@ -159,33 +162,3 @@ pred_summary
 
 save(elapsed_time, prdGrid, fixed_summary, draws_df, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/NNGP_SST.RData"))
 
-str(prdGrid)
-prdGrid <- st_sf(prdGrid) %>% mutate(post_mean = pred_summary$post.mean)
-prdGrid
-prdGrid <- prdGrid %>% mutate(x = st_coordinates(prdGrid)[,1]) %>% mutate(y = st_coordinates(prdGrid)[,2]) 
-prdGrid <- prdGrid %>% mutate(post_sd = pred_summary$post.sd)
-
-ggp <- gridExtra::grid.arrange(
-  
-  ggplot(prdGrid) + 
-    geom_raster(aes(x = x, y = y, fill = post_mean)) + 
-    scale_fill_distiller(palette = 'Spectral') +
-    coord_equal()+
-    theme_void() +
-    theme(legend.title = element_blank(),
-          panel.grid = element_blank(),
-          legend.key.height = unit(1, 'cm'), 
-          legend.position = "right"),
-  
-  ggplot(prdGrid) + 
-    geom_raster(aes(x = x, y = y, fill = post_sd)) + 
-    scale_fill_distiller(palette = 'Spectral') +
-    coord_equal()+
-    theme_void() +
-    theme(legend.title = element_blank(),
-          panel.grid = element_blank(),
-          legend.key.height = unit(1, 'cm'), 
-          legend.position = "right"),
-  ncol = 2)
-ggp
-ggsave(plot = ggp, filename = "./SSTempDataAnalysis/NNGP_SST_Prediction_MeasnSD.png", height = 3, width = 12)
