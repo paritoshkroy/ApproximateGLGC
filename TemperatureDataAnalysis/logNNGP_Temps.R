@@ -43,7 +43,7 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
+nNeighbors <- 5
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -68,14 +68,19 @@ ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), from = 0, to = uLimit)
 
-P <- 2
-mu_theta <- c(mean(obsY),rep(0,P))
-V_theta <- diag(c(2.5*var(obsY),rep(1,P)))
-input <- list(N = nsize, K = nNeighbors, P = 2, y = log(obsY), X = obsX, coords = obsCoords, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2])
+lambda_sigma <- -log(0.01)/1; lambda_sigma
+lambda_tau <- -log(0.01)/1; lambda_tau
+pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+
+P <- 3
+mu_theta <- c(mean(obsY),rep(0,P-1))
+V_theta <- diag(c(10,rep(1,P-1)))
+
+input <- list(N = nsize, K = nNeighbors, P = P, y = log(obsY), X = obsX, coords = obsCoords, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma = lambda_sigma, lambda_tau = lambda_tau)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNGP_HN.stan")
+stan_file <- paste0(fpath,"StanFiles/NNGP_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -86,8 +91,7 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
-                          step_size = 0.25,
-                          init = 1)
+                          step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600

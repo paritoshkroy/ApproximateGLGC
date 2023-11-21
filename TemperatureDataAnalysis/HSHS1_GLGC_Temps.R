@@ -55,11 +55,11 @@ quantile(obsDistVec)
 ################################################################################
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
-minimum_estimable_lscale <- as.numeric(quantile(obsDistVec, prob = 0.25)); minimum_estimable_lscale <- 0.04; minimum_estimable_lscale
-c <- pmax(1.10,4.75*(minimum_estimable_lscale/min(Lstar))); c
-c <- 1.10
-m1 <- round(3.42*c/(minimum_estimable_lscale/Lstar[1])); m1
-m2 <- round(3.42*c/(minimum_estimable_lscale/Lstar[2])); m2
+ell_hat <- 0.04;
+ell_hat/Lstar
+c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
+m1 <- round(3.42*c/(ell_hat/Lstar[1])); m1
+m2 <- round(3.42*c/(ell_hat/Lstar[2])); m2
 mstar <- m1*m2; mstar
 L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
