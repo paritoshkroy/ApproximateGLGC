@@ -10,7 +10,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 6
+node <- 1
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -60,7 +60,7 @@ rm(obsDistMat)
 ####################################################################
 ## Prior elicitation
 ####################################################################
-lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+lLimit <- quantile(obsDistVec, prob = 0); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 library(nleqslv)
@@ -88,7 +88,7 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
+                          iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
