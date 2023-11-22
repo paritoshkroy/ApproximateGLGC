@@ -85,7 +85,7 @@ input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiM
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -93,7 +93,7 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 2000,
+                          iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
