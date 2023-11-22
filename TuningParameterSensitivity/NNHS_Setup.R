@@ -10,7 +10,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 6
+node <- 1
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -25,65 +25,36 @@ cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Setup for the simulation study
 ##########################################################################
-vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
-#vector_c <- round(pmax(4.5*vector_lscale,1.35),2); vector_c
-vector_c <- 1.2 + vector_lscale; vector_c
+vector_lscale <- seq(0.1,0.4,l=2); vector_lscale
+vector_c <- round(pmax(4.5*vector_lscale,1.2),2); vector_c
 
-#vector_m1 <- pmax(round(3.42*vector_c/vector_lscale,0),20); vector_m1
-vector_m1 <- rep(22,length(vector_c)); vector_m1
-setup1 <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m = 10)
+round(3.42*vector_c/vector_lscale,0)
+vector_m1 <- pmax(22, ceiling(3.42*vector_c/vector_lscale)); vector_m1
+setup1 <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m = 5)
 setup1
-
-#vector_m2 <- pmax(round(3.42*vector_c/vector_lscale,0),25); vector_m2
-vector_m2 <- rep(28,length(vector_c)); vector_m2
-setup2 <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m2, m = 15)
+setup2 <- tibble(lscale = vector_lscale, c = vector_c, m1 = c(52,32), m = 5)
 setup2
-
-#vector_m3 <- pmax(round(3.42*vector_c/vector_lscale,0),30); vector_m3
-vector_m3 <- rep(34,length(vector_c)); vector_m3
-setup3 <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m3, m = 10)
+setup3 <- tibble(lscale = vector_lscale, c = vector_c, m1 = vector_m1, m = 10)
 setup3
-
-#vector_m4 <- pmax(round(3.42*vector_c/vector_lscale,0),35); vector_m4
-vector_m4 <- rep(40,length(vector_c)); vector_m4
-setup4 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m4)
+setup4 <- tibble(lscale = vector_lscale, c = vector_c, m1 = c(52,32), m = 10)
 setup4
 
 setup <- rbind(setup1,setup2,setup3,setup4) %>% distinct()
+setup <- setup %>% arrange(lscale)
 setup
-setup %>% filter(lscale == 0.3)
-
-##########################################################################
-
-vector_lscale <- seq(0.05,0.70,l=14); vector_lscale
-setup1 <- tibble(lscale = vector_lscale, m = 6)
-setup1
-
-setup2 <- tibble(lscale = vector_lscale, m = 10)
-setup2
-
-setup3 <- tibble(lscale = vector_lscale, m = 15)
-setup3
-
-setup4 <- tibble(lscale = vector_lscale, m = 20)
-setup4
-
-setup <- rbind(setup1,setup2,setup3,setup4) %>% distinct()
-setup
-setup %>% filter(lscale == 0.05)
-
 ##########################################################################
 # Data generation
 ##########################################################################
-
 this_setup <- setup[node,]; this_setup
 lscale1 <- as.numeric(this_setup[,"lscale"]); lscale1
 lscale2 <- as.numeric(this_setup[,"lscale"]); lscale2
 m <- as.numeric(this_setup[,"m"]); m
+m1 <- as.numeric(this_setup[,"m1"]); m1
+m2 <- as.numeric(this_setup[,"m1"]); m2
+c <- as.numeric(this_setup[,"c"]); c
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"TuningParameterSensitivity/data_generation.R"))
-
 #######################################################################
 ## partition as observed and predicted
 #######################################################################
@@ -93,6 +64,10 @@ obsY <- y[idSampled]
 prdY <- y[-idSampled]
 obsX <- X[idSampled,]
 prdX <- X[-idSampled,]
+obsZ1 <- z1[idSampled]
+obsZ2 <- z2[idSampled]
+prdZ1 <- z1[-idSampled]
+prdZ2 <- z2[-idSampled]
 
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
@@ -105,22 +80,22 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 15
+nNeighbors <- m; nNeighbors
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
 obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
-obsZ1 <- z1[idSampled][neiMatInfo$ord]
-obsZ2 <- z2[idSampled][neiMatInfo$ord]
+obsZ1 <- obsZ1[neiMatInfo$ord]
+obsZ2 <- obsZ2[idSampled][neiMatInfo$ord]
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 22; m2 <- 22; mstar <- m1*m2
+m1; m2; mstar <- m1*m2; mstar
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-c <- c(1.5,1.5)
+c
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -129,8 +104,17 @@ lambda <- ((pi*S)/(2*L))^2
 str(lambda)
 head(lambda)
 
+## Prior elicitation
+lLimit <- quantile(obsDistVec, prob = 0); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+
+lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
+lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+lambda_tau <- -log(0.01)/1; lambda_tau
+pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+
 library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, 1.5*uLimit)
 
@@ -139,11 +123,11 @@ P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
 # Keep in mind that the data should be ordered following nearest neighbor settings
-input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], positive_skewness = 1)
+input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC.stan")
+stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -197,7 +181,7 @@ z1_summary <- tibble(z1 = obsZ1,
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TunningParameterSensitivity/NN20_HS22_LS",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TuningParameterSensitivity/NNHS_Setup",node,".RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -292,9 +276,9 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("NN20_HS22_LS",node)) %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = paste0("NNHS_Setup",node)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TunningParameterSensitivity/NN20_HS22_LS",node,".RData"))
+save(m, c, m1, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TuningParameterSensitivity/NNHS_Setup",node,".RData"))
 
