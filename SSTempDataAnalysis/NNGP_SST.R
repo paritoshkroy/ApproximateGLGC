@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 load(paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
@@ -42,7 +42,7 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 15
+nNeighbors <- 5
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -50,7 +50,7 @@ obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.05); lLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 lambda_sigma <- -log(0.01)/1; lambda_sigma
@@ -78,8 +78,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 500,
-                          iter_sampling = 500,
+                          iter_warmup = 1500,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -108,7 +108,7 @@ mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(siz
 size_post_samples <- nrow(draws_df); size_post_samples
 post_ell <- as_tibble(draws_df) %>% .$ell; str(post_ell)
 post_sigma <- as_tibble(draws_df) %>% .$sigma; str(post_sigma)
-save(elapsed_time, fixed_summary, draws_df, file = paste0(fpath,"SSTempDataAnalysis/NNGP_GP_SST.RData"))
+save(elapsed_time, fixed_summary, draws_df, file = paste0(fpath,"SSTempDataAnalysis/NNGP_SST.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -153,6 +153,7 @@ post_ypred <- exsf$predict_vecchia_rng(
 
 ypred_draws <- do.call(rbind,post_ypred); str(ypred_draws)
 pred_summary <- tibble(
+  y = prdY,
   post.mean = apply(ypred_draws, 2, mean),
   post.sd = apply(ypred_draws, 2, sd),
   post.q2.5 = apply(ypred_draws, 2, quantile2.5),
@@ -160,5 +161,21 @@ pred_summary <- tibble(
   post.q97.5 = apply(ypred_draws, 2, quantile97.5))
 pred_summary
 
-save(elapsed_time, prdGrid, fixed_summary, draws_df, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/NNGP_SST.RData"))
+## Computation for scoring rules
+library(scoringRules)
+ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
+logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs
+CRPS <- mean(crps_sample(y = prdY, dat = t(ypred_draws))); CRPS
+
+scores_df <- pred_summary %>% 
+  mutate(intervals = scoringutils::interval_score(true_values = y, lower = post.q2.5, upper = post.q50, interval_range = 0.95)) %>%
+  mutate(btw = between(y,post.q2.5, post.q97.5)) %>%
+  mutate(error = y - post.q50) %>%
+  summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
+            IS = mean(intervals)) %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNGP") %>%
+  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
+scores_df
+
+save(elapsed_time, prdGrid, fixed_summary, draws_df, scores_df, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/NNGP_SST.RData"))
 

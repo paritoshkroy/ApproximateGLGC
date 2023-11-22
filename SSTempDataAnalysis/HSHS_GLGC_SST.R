@@ -44,7 +44,7 @@ rm(obsDistMat)
 ## For minimum m1 and m2 for the HSGP with Matern32 covariance function
 quantile(obsDistVec, probs = seq(1,10,l=3)/100)
 Lstar <- c(max(xRange - xMidRange), max(yRange - yMidRange)); Lstar
-ell_hat <- 1.2; ell_hat
+ell_hat <- 0.35; ell_hat
 c <- pmax(1.2, 4.5*(ell_hat/Lstar)); c
 L <- c*Lstar; L
 m <- pmax(22,ceiling(3.42 * c/(ell_hat/Lstar))); m
@@ -60,7 +60,7 @@ head(lambda)
 #############################################################################
 # Prior elicitation
 #############################################################################
-lLimit <- quantile(obsDistVec, prob = 0.05); lLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 ## Inverse Gamma for length scale
@@ -90,7 +90,7 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
+                          iter_warmup = 1500,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,

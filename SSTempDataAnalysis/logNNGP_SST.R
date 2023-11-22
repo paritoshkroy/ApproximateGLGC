@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 load(paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
@@ -39,7 +39,7 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
+nNeighbors <- 5
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -47,7 +47,7 @@ obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.05); lLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 lambda_sigma <- -log(0.01)/1; lambda_sigma
@@ -75,8 +75,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 500,
-                          iter_sampling = 500,
+                          iter_warmup = 1500,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -151,6 +151,7 @@ post_logypred <- exsf$predict_vecchia_rng(
 post_ypred <- lapply(post_logypred,exp)
 ypred_draws <- do.call(rbind,post_ypred); str(ypred_draws)
 pred_summary <- tibble(
+  y = prdY,
   post.mean = apply(ypred_draws, 2, mean),
   post.sd = apply(ypred_draws, 2, sd),
   post.q2.5 = apply(ypred_draws, 2, quantile2.5),
@@ -158,35 +159,21 @@ pred_summary <- tibble(
   post.q97.5 = apply(ypred_draws, 2, quantile97.5))
 pred_summary
 
-save(elapsed_time, prdGrid, fixed_summary, draws_df, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/logNNGP_SST.RData"))
+## Computation for scoring rules
+library(scoringRules)
+ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
+logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs
+CRPS <- mean(crps_sample(y = prdY, dat = t(ypred_draws))); CRPS
 
-str(prdGrid)
-prdGrid <- st_sf(prdGrid) %>% mutate(post_mean = pred_summary$post.mean)
-prdGrid
-prdGrid <- prdGrid %>% mutate(x = st_coordinates(prdGrid)[,1]) %>% mutate(y = st_coordinates(prdGrid)[,2]) 
-prdGrid <- prdGrid %>% mutate(post_sd = pred_summary$post.sd)
+scores_df <- pred_summary %>% 
+  mutate(intervals = scoringutils::interval_score(true_values = y, lower = post.q2.5, upper = post.q50, interval_range = 0.95)) %>%
+  mutate(btw = between(y,post.q2.5, post.q97.5)) %>%
+  mutate(error = y - post.q50) %>%
+  summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
+            IS = mean(intervals)) %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "logNNGP") %>%
+  select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
+scores_df
 
-ggp <- gridExtra::grid.arrange(
-  
-  ggplot(prdGrid) + 
-    geom_raster(aes(x = x, y = y, fill = post_mean)) + 
-    scale_fill_distiller(palette = 'Spectral') +
-    coord_equal()+
-    theme_void() +
-    theme(legend.title = element_blank(),
-          panel.grid = element_blank(),
-          legend.key.height = unit(1, 'cm'), 
-          legend.position = "right"),
-  
-  ggplot(prdGrid) + 
-    geom_raster(aes(x = x, y = y, fill = post_sd)) + 
-    scale_fill_distiller(palette = 'Spectral') +
-    coord_equal()+
-    theme_void() +
-    theme(legend.title = element_blank(),
-          panel.grid = element_blank(),
-          legend.key.height = unit(1, 'cm'), 
-          legend.position = "right"),
-  ncol = 2)
-ggp
-ggsave(plot = ggp, filename = "./SSTempDataAnalysis/logNNGP_SST_Prediction_MeasnSD.png", height = 3, width = 12)
+save(elapsed_time, prdGrid, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"SSTempDataAnalysis/logNNGP_SST.RData"))
+
