@@ -10,7 +10,7 @@ library(nleqslv)
 ###########################################################################
 # Local PC
 ###########################################################################
-node <- 3
+node <- 1
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 ##########################################################################
 # ARC Preparation
@@ -25,7 +25,7 @@ cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Setup for the simulation study
 ##########################################################################
-vector_lscale <- seq(0.10,0.50,l=5); vector_lscale
+vector_lscale <- seq(0.10,0.40,l=2); vector_lscale
 setup1 <- tibble(lscale = vector_lscale, m = 5)
 setup1
 
@@ -85,7 +85,7 @@ obsZ1 <- obsZ1[neiMatInfo$ord]
 obsZ2 <- obsZ2[idSampled][neiMatInfo$ord]
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+lLimit <- quantile(obsDistVec, prob = 0); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
@@ -114,7 +114,7 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input,
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
+                          iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
