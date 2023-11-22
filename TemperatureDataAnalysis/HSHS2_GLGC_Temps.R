@@ -55,16 +55,11 @@ quantile(obsDistVec)
 ################################################################################
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
-quantile(obsDistVec, probs = seq(1,5,l=2)/100)
-minimum_estimable_lscale <- 0.25*Lstar; minimum_estimable_lscale
-c <- pmax(1.10,4.75*(minimum_estimable_lscale/min(Lstar))); c
-c <- 1.10
-0.10*Lstar
-c <- round(1 + 2*0.05/Lstar, 2); c
-m1 <- round(3.42*c/(minimum_estimable_lscale/Lstar[1])); m1
-m2 <- round(3.42*c/(minimum_estimable_lscale/Lstar[2])); m2
-m1 <- 22
-m2 <- 22
+ell_hat <- 0.04;
+ell_hat/Lstar
+c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
+m1 <- pmax(54,round(3.42*c/(ell_hat/Lstar[1]))); m1
+m2 <- pmax(54,round(3.42*c/(ell_hat/Lstar[2]))); m2
 mstar <- m1*m2; mstar
 L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -75,7 +70,6 @@ head(lambda)
 #############################################################################
 # Prior elicitation
 #############################################################################
-
 ## Inverse Gamma for length scale
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
@@ -103,7 +97,7 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
+                          iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,

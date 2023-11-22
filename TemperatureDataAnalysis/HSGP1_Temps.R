@@ -22,12 +22,8 @@ nsite <- nrow(selected.sat.temps); nsite
 ####################################################################################
 apply(selected.sat.temps[,c("Lon","Lat")], 2, range)  # range of the spatial domain
 selected.sat.temps <- selected.sat.temps %>% 
-  mutate(relocateLon = Lon - mean(range(Lon))) %>%
-  mutate(relocateLat = Lat - mean(range(Lat))) %>%
-  mutate(multiplier = max(max(relocateLon), max(relocateLat))) %>%
-  mutate(scaledLon = relocateLon/multiplier) %>%
-  mutate(scaledLat = relocateLat/multiplier)
-selected.sat.temps %>% distinct(multiplier)
+  mutate(scaledLon = Lon - mean(range(Lon))) %>%
+  mutate(scaledLat = Lat - mean(range(Lat)))
 apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range)
 
 #####################################################################
@@ -46,12 +42,15 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
-m1 <- 42; m2 <- 42; mstar <- m1*m2
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
-Lstar <- apply(xyRanges, 2, max); Lstar
-c <- c(1.22,1.22)
-L <- c*Lstar
-str(L)
+Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
+ell_hat <- 0.04;
+ell_hat/Lstar
+c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
+m1 <- round(3.42*c/(ell_hat/Lstar[1])); m1
+m2 <- round(3.42*c/(ell_hat/Lstar[2])); m2
+mstar <- m1*m2; mstar
+L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
 str(S)
 lambda <- ((pi*S)/(2*L))^2
@@ -67,7 +66,7 @@ obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec); obsMedDist
 obsMinDist <- min(obsDistVec); obsMinDist
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 rm(obsDistMat)
 quantile(obsDistVec, probs = c(0.01,0.05,0.25,0.5,0.75,0.95,0.99))
 
@@ -95,8 +94,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 500,
-                          iter_sampling = 500,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -139,7 +138,7 @@ z_summary <- tibble(post.mean = apply(post_z, 2, mean),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
 
-save(elapsed_time, fixed_summary, draws_df, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSGP_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSGP1_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -209,9 +208,9 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSGP") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSGP1") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSGP_Temps.RData"))
+save(elapsed_time, fixed_summary, draws_df, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSGP1_Temps.RData"))
 
