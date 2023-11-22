@@ -25,40 +25,24 @@ cat("The seed used to be ", node, "\n")
 ##########################################################################
 # Setup for the simulation study
 ##########################################################################
-vector_lscale <- seq(0.10,0.50,l=5); vector_lscale
-vector_c <- pmax(1.2, round(4.5*vector_lscale, 2)); vector_c
+vector_lscale <- seq(0.10,0.40,l=2); vector_lscale
 vector_c <- 1 + 2*vector_lscale; vector_c
+vector_c <- pmax(1.2, round(4.5*vector_lscale, 2)); vector_c
 
-vector_m1 <- round(3.42*vector_c/vector_lscale,0); vector_m1
-vector_m1 <- rep(20,length(vector_c)); vector_m1
+ceiling(3.42*vector_c/vector_lscale)
+vector_m1 <- pmax(22,ceiling(3.42*vector_c/vector_lscale)); vector_m1
 setup1 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m1)
 setup1
 
-vector_m2 <- round(3.42*vector_c/vector_lscale,0); vector_m2
-vector_m2 <- rep(25,length(vector_c)); vector_m2
-setup2 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m2)
+setup2 <- tibble(lscale = vector_lscale, c = vector_c, m = c(47,27))
 setup2
 
-vector_m3 <- round(3.42*vector_c/vector_lscale,0); vector_m3
-vector_m3 <- rep(30,length(vector_c)); vector_m3
-setup3 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m3)
+setup3 <- tibble(lscale = vector_lscale, c = vector_c, m = c(52,32))
 setup3
 
-vector_m4 <- round(3.42*vector_c/vector_lscale,0); vector_m4
-vector_m4 <- rep(40,length(vector_c)); vector_m4
-setup4 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m4)
-setup4
-
-vector_m5 <- round(3.42*vector_c/vector_lscale,0); vector_m5
-vector_m5 <- rep(50,length(vector_c)); vector_m5
-setup5 <- tibble(lscale = vector_lscale, c = vector_c, m = vector_m5)
-setup5
-
-setup <- rbind(setup1,setup2,setup3,setup4,setup5) %>% distinct()
-setup %>% print(n = nrow(setup))
-setup %>% filter(lscale == 0.2)
-setup %>% filter(lscale == 0.1)
-setup %>% filter(lscale == 0.5)
+setup <- rbind(setup1,setup2,setup3)
+setup <- setup %>% arrange(lscale)
+setup
 ##########################################################################
 # Data generation
 ##########################################################################
@@ -101,7 +85,7 @@ xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
 mstar <- m1*m2; mstar
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-c <- c(c,c); c
+c
 L <- c*Lstar
 str(L)
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -134,14 +118,14 @@ input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoord
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_HN.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1500,
+                          iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
