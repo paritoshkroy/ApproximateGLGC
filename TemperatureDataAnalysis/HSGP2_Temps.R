@@ -65,7 +65,7 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec); obsMedDist
 obsMinDist <- min(obsDistVec); obsMinDist
-lLimit <- quantile(obsDistVec, prob = 0); lLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 rm(obsDistMat)
 quantile(obsDistVec, probs = c(0.01,0.05,0.25,0.5,0.75,0.95,0.99))

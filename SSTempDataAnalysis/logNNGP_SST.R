@@ -19,9 +19,12 @@ nsite <- nrow(msst_df); nsite
 #####################################################################
 # Preparing model objects
 #####################################################################
-nsize <- nrow(obsCoords); nsize
+nsize
 psize
-obsY <- msst_df$temp; str(obsY)
+obsY <- msst_df$temp[idSampled]; str(obsY)
+prdY <- msst_df$temp[-idSampled]; str(prdY)
+obsCoords <- coords[idSampled,]; str(obsCoords)
+prdCoords <- coords[-idSampled,]; str(prdCoords)
 obsX <- cbind(1,obsCoords); str(obsX)
 prdX <- cbind(1,prdCoords); str(prdX)
 str(obsCoords)
@@ -175,5 +178,5 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, prdGrid, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"SSTempDataAnalysis/logNNGP_SST.RData"))
+save(elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"SSTempDataAnalysis/logNNGP_SST.RData"))
 

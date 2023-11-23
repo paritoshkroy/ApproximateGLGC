@@ -21,7 +21,7 @@ yMidRange <- mean(yRange);yMidRange
 
 dt <- read_csv(paste0(fpath,"SSTempDataAnalysis/SelectedData/3504026.csv"))
 dt %>% group_by(SST_MM) %>% count()
-#dt <- dt %>% filter(!is.na(SST_MM)) %>% filter(SST_MM != 0)
+dt <- dt %>% filter(!is.na(SST_MM)) #%>% filter(SST_MM != 0)
 dt <- dt %>% mutate(date = as.Date(DATE)) %>% select(date,LONGITUDE,LATITUDE,SEA_SURF_TEMP)
 dt <- dt %>% drop_na()
 dt %>% distinct(LONGITUDE,LATITUDE)
@@ -74,7 +74,7 @@ ggsave(filename = "./SSTempDataAnalysis/SelectedData/SSTempResidualsDistribution
 
 msst_df <- dt_shp_sf %>% st_drop_geometry()
 nsite <- nrow(msst_df); nsite
-nsize <- 1000
+nsize <- ceiling(0.90*nsite); nsize
 psize <- nsite - nsize; psize
 
 set.seed(100)

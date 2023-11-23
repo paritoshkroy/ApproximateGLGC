@@ -12,7 +12,7 @@ fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-load(paste0(fpath,"TemperatureDataAnalysis/SelectedData/SelectedStatelliteTemps.rda"))
+load(paste0(fpath,"/TemperatureDataAnalysis/SelectedData/SelectedStatelliteTemps.rda"))
 head(selected.sat.temps)
 table(is.na(selected.sat.temps$MaskTemp))  # FALSE are the locations to be used for modeling
 nsite <- nrow(selected.sat.temps); nsite
@@ -22,11 +22,8 @@ nsite <- nrow(selected.sat.temps); nsite
 ####################################################################################
 apply(selected.sat.temps[,c("Lon","Lat")], 2, range)  # range of the spatial domain
 selected.sat.temps <- selected.sat.temps %>% 
-  mutate(relocateLon = Lon - mean(range(Lon))) %>%
-  mutate(relocateLat = Lat - mean(range(Lat))) %>%
-  mutate(multiplier = max(max(relocateLon), max(relocateLat))) %>%
-  mutate(scaledLon = relocateLon/multiplier) %>%
-  mutate(scaledLat = relocateLat/multiplier)
+  mutate(scaledLon = Lon - mean(range(Lon))) %>%
+  mutate(scaledLat = Lat - mean(range(Lat)))
 apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range)
 
 #####################################################################
@@ -43,14 +40,6 @@ prdCoords <- selected.sat.temps %>% filter(is.na(MaskTemp)) %>% select(scaledLon
 obsX <- cbind(1,obsCoords); str(obsX)
 prdX <- cbind(1,prdCoords); str(prdX)
 
-obsDistMat <- fields::rdist(obsCoords)
-str(obsDistMat)
-obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
-obsMaxDist <- max(obsDistVec)
-obsMedDist <- median(obsDistVec)
-obsMinDist <- min(obsDistVec)
-rm(obsDistMat)
-
 ################################################################################
 ## NNGP preparation
 ################################################################################
@@ -60,10 +49,19 @@ neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threa
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
 obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
+head(obsCoords)
 obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
 
+obsDistMat <- fields::rdist(obsCoords)
+str(obsDistMat)
+obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
+obsMaxDist <- max(obsDistVec)
+obsMedDist <- median(obsDistVec)
+obsMinDist <- min(obsDistVec)
+rm(obsDistMat)
+
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0); lLimit
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
@@ -85,7 +83,7 @@ input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiM
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_HN.stan")
+stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()

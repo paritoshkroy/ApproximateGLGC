@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 load(paste0(fpath,"SSTempDataAnalysis/SelectedData/SSTempDataPreparation.rda"))
@@ -177,5 +177,5 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, prdGrid, fixed_summary, draws_df, scores_df, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/NNGP_SST.RData"))
+save(elapsed_time, fixed_summary, draws_df, scores_df, pred_summary, file = paste0(fpath,"SSTempDataAnalysis/NNGP_SST.RData"))
 
