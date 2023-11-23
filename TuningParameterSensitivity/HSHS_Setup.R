@@ -95,7 +95,7 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- as.numeric(quantile(obsDistVec, prob = 0.01)); lLimit
+lLimit <- as.numeric(quantile(obsDistVec, prob = 0)); lLimit
 uLimit <- as.numeric(quantile(obsDistVec, prob = 0.50)); uLimit
 
 ## Inverse Gamma for length scale
