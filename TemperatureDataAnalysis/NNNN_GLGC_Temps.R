@@ -85,7 +85,7 @@ input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiM
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
