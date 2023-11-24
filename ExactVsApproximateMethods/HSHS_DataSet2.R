@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set2.R"))
@@ -93,8 +93,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 500,
-                          iter_sampling = 500,
+                          iter_warmup = 3,
+                          iter_sampling = 3,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
