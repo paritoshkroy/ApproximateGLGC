@@ -19,12 +19,12 @@ lscale1 <- 0.5
 lscale2 <- 0.5
 tau <- 0.5
 tausq <- tau^2
-gamma <- -0.5
+gamma <- -0.80
 
 distMat <- fields::rdist(coords)
 
 SigmaX <- 1*0.25^abs(outer(1:2,1:2,'-'))
-set.seed(200)
+set.seed(lscale1*lscale2*gamma)
 X <- cbind(1,cbind(rnorm(n=nsite),rnorm(n=nsite)) %*% t(chol(SigmaX)))
 muX <- drop(X %*% theta)
 z1 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma1, lscale = lscale1) + diag(x=1e-9, nrow = nsite, ncol = nsite)), rnorm(nsite)))
