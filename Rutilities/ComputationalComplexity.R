@@ -75,9 +75,9 @@ setup %>%
         strip.text = element_text(size = 13),
         panel.grid = element_blank(),
         legend.title = element_blank(),
-        legend.position = c(0.07,0.87),
+        legend.position = c(0.07,0.85),
         axis.text.y = element_blank(),
         axis.text.x = element_text(size = 12),
         axis.ticks.y = element_blank())
-ggsave(filename = "./Rutilities/Computational_Complexity_Plots.png", height = 8, width = 11)
+ggsave(filename = "./Rutilities/Computational_Complexity_Plots.png", height = 6, width = 9)
 
