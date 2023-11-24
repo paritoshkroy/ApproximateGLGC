@@ -46,8 +46,8 @@ ell_hat <- 0.5
 c <- 1 + 2*ell_hat; c
 c <- pmax(1.2, 4.5*ell_hat); c
 
-m1 <- pmax(22,round(3.42*c/ell_hat)); m1
-m2 <- pmax(22,round(3.42*c/ell_hat)); m2
+m1 <- pmax(22,ceiling(3.42*c/ell_hat)); m1
+m2 <- pmax(22,ceiling(3.42*c/ell_hat)); m2
 mstar <- m1*m2; mstar
 
 L <- c*Lstar; L
@@ -253,5 +253,5 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet4.RData"))
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet4.RData"))
 

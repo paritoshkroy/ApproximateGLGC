@@ -15,7 +15,7 @@ fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 # Generating the data
 ######################################################################
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set1.R"))
+source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set3.R"))
 
 ######################################################################
 # partition as observed and predicted
@@ -101,7 +101,7 @@ mu_theta <- c(mean(obsY),rep(0,P-1))
 V_theta <- diag(c(10,rep(1,P-1)))
 
 # Keep in mind that the data should be ordered following nearest neighbor settings
-input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0)
+input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1)
 str(input)
 
 library(cmdstanr)
@@ -159,7 +159,7 @@ z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet1.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -255,10 +255,10 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNHS_DataSet1") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNHS_DataSet3") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet1.RData"))
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3.RData"))
 
 

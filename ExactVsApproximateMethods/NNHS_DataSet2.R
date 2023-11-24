@@ -15,7 +15,7 @@ fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
 # Generating the data
 ######################################################################
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set1.R"))
+source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set2.R"))
 
 ######################################################################
 # partition as observed and predicted
@@ -60,7 +60,7 @@ yRangeDat <- c(-1,1)
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
 quantile(obsDistVec, probs = c(1,2.5,52,50)/100)
 
-ell_hat <- 0.2
+ell_hat <- 0.5
 c <- 1 + 2*ell_hat; c
 c <- pmax(1.2, 4.5*ell_hat); c
 
@@ -159,7 +159,7 @@ z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet1.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -255,10 +255,10 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNHS_DataSet1") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNHS_DataSet2") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet1.RData"))
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
 
 

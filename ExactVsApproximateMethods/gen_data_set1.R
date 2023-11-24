@@ -15,11 +15,11 @@ sigma1 <- 1
 sigma2 <- 1
 sigma1sq <- sigma1^2
 sigma2sq <- sigma2^2
-lscale1 <- 0.1
-lscale2 <- 0.1
+lscale1 <- 0.2
+lscale2 <- 0.2
 tau <- 0.5
 tausq <- tau^2
-gamma <- -0.80
+gamma <- -0.75
 
 distMat <- fields::rdist(coords)
 
