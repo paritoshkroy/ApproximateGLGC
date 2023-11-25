@@ -69,7 +69,7 @@ setup %>%
   scale_linetype_manual(values=c("dotted","dotdash","dashed","longdash"),
                         labels = c("m = 5","m = 10","m = 15","m = 20")) +
   theme_bw() +
-  xlab(bquote(Number~of~basis~functions~under~HSHS)) +
+  xlab(bquote(m[d])) +
   ylab(bquote(Computational~Cost)) +
   theme(strip.background = element_blank(),
         strip.text = element_text(size = 13),
