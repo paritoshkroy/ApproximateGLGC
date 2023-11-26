@@ -86,7 +86,7 @@ input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoord
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
