@@ -24,7 +24,7 @@ gamma <- 1.5
 distMat <- fields::rdist(coords)
 
 SigmaX <- 1*0.25^abs(outer(1:2,1:2,'-'))
-set.seed(lscale1*lscale2*gamma)
+set.seed(10)
 X <- cbind(1,cbind(rnorm(n=nsite),rnorm(n=nsite)) %*% t(chol(SigmaX)))
 muX <- drop(X %*% theta)
 z1 <- drop(crossprod(chol(matern32(d = fields::rdist(coords), sigma = sigma1, lscale = lscale1) + diag(x=1e-9, nrow = nsite, ncol = nsite)), rnorm(nsite)))
@@ -34,10 +34,6 @@ y <- rnorm(n = nsite, mean = linpred, sd = tau)
 nsize <- 500
 idSampled <- sample.int(n = nsite, size = nsize, replace = FALSE)
 set.seed(NULL)
-#hist(y, nclass = 21)
-#hist(y[idSampled], nclass = 21)
-#plot(density(y[idSampled]))
-#boxplot(y[idSampled])
 
 obj_all <- ls()
 obj_keep <- c("idSampled", "y", "z1", "z2", "X", "theta", "sigma1", "sigma2", "lscale1", "lscale2", "tau", "coords", "gamma", "nsize")
