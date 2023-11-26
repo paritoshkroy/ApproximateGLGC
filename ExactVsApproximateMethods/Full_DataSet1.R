@@ -62,7 +62,7 @@ input <- list(N = nsize, P = P, y = obsY, X = obsX, coords = obsCoords, mu_theta
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/Full_GLGC_.stan")
+stan_file <- paste0(fpath,"StanFiles/Full_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
