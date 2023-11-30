@@ -61,6 +61,8 @@ V_theta <- diag(c(10,rep(1,P-1)))
 input <- list(N = nsize, P = P, y = obsY, X = obsX, coords = obsCoords, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0)
 str(input)
 
+run_it <- FALSE
+if(run_it) {
 library(cmdstanr)
 stan_file <- paste0(fpath,"StanFiles/Full_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
@@ -121,6 +123,10 @@ z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
 save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
+
+}
+
+load(file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
