@@ -1,0 +1,669 @@
+
+R version 4.2.1 (2022-06-23) -- "Funny-Looking Kid"
+Copyright (C) 2022 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> rm(list=ls())
+> graphics.off()
+> library(fields)
+Loading required package: spam
+Spam version 2.9-1 (2022-08-07) is loaded.
+Type 'help( Spam)' or 'demo( spam)' for a short introduction 
+and overview of this package.
+Help for individual functions is also obtained by adding the
+suffix '.spam' to the function name, e.g. 'help( chol.spam)'.
+
+Attaching package: ‘spam’
+
+The following objects are masked from ‘package:base’:
+
+    backsolve, forwardsolve
+
+Loading required package: viridis
+Loading required package: viridisLite
+
+Try help(fields) to get started.
+> library(Matrix)
+
+Attaching package: ‘Matrix’
+
+The following object is masked from ‘package:spam’:
+
+    det
+
+> library(tidyverse)
+── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.2     ✔ readr     2.1.4
+✔ forcats   1.0.0     ✔ stringr   1.5.0
+✔ ggplot2   3.4.2     ✔ tibble    3.2.1
+✔ lubridate 1.9.2     ✔ tidyr     1.3.0
+✔ purrr     1.0.1     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ tidyr::expand() masks Matrix::expand()
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+✖ tidyr::pack()   masks Matrix::pack()
+✖ tidyr::unpack() masks Matrix::unpack()
+ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+> library(magrittr)
+
+Attaching package: ‘magrittr’
+
+The following object is masked from ‘package:purrr’:
+
+    set_names
+
+The following object is masked from ‘package:tidyr’:
+
+    extract
+
+> library(tidybayes)
+> library(coda)
+> library(nleqslv)
+> 
+> fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
+> fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+> 
+> source(paste0(fpath,"Rutilities/utility_functions.R"))
+> source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set1.R"))
+> 
+> # partition as observed and predicted
+> obsCoords <- coords[idSampled,]
+> prdCoords <- coords[-idSampled,]
+> obsY <- y[idSampled]
+> prdY <- y[-idSampled]
+> obsX <- X[idSampled,]
+> prdX <- X[-idSampled,]
+> obsZ1 <- z1[idSampled]
+> obsZ2 <- z2[idSampled]
+> prdZ1 <- z1[-idSampled]
+> prdZ2 <- z2[-idSampled]
+> 
+> obsDistMat <- fields::rdist(obsCoords)
+> str(obsDistMat)
+ num [1:500, 1:500] 0 0.752 1.208 0.58 0.279 ...
+> obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
+> obsMaxDist <- max(obsDistVec)
+> obsMedDist <- median(obsDistVec)
+> obsMinDist <- min(obsDistVec)
+> rm(obsDistMat)
+> 
+> ## Prior elicitation
+> lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+      1% 
+0.116619 
+> uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+     99% 
+2.161481 
+> 
+> library(nleqslv)
+> ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+> ab
+[1] 3.0682196 0.9937193
+> curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
+> summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.09715 0.24637 0.36458 0.49697 0.56926 5.61789 
+> 
+> ## Exponential and PC prior
+> lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
+[1] 4.60517
+> lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+[1] 4.60517
+> lambda_tau <- -log(0.01)/1; lambda_tau
+[1] 4.60517
+> pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+[1] 0.99
+> lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
+[1] 0.5370505
+> lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
+[1] 0.5370505
+> pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
+  1% 
+0.01 
+> summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+  0.0872   0.3708   0.7356   3.4001   1.6350 508.6095 
+> 
+> ## Stan input
+> P <- 3
+> mu_theta <- c(mean(obsY),rep(0, P-1))
+> V_theta <- diag(c(10,rep(1,P-1)))
+> input <- list(N = nsize, P = P, y = obsY, X = obsX, coords = obsCoords, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0)
+> str(input)
+List of 15
+ $ N                : num 500
+ $ P                : num 3
+ $ y                : num [1:500] 3.94 3.85 1.72 2.44 2.03 ...
+ $ X                : num [1:500, 1:3] 1 1 1 1 1 1 1 1 1 1 ...
+ $ coords           : num [1:500, 1:2] -0.77 -0.09 0.41 -0.19 -0.51 -0.11 0.53 0.23 0.93 0.79 ...
+ $ mu_theta         : num [1:3] 3.17 0 0
+ $ V_theta          : num [1:3, 1:3] 10 0 0 0 1 0 0 0 1
+ $ lambda_sigma1    : num 4.61
+ $ lambda_sigma2    : num 4.61
+ $ lambda_tau       : num 4.61
+ $ a                : num 3.07
+ $ b                : num 0.994
+ $ lambda_ell1      : num 0.537
+ $ lambda_ell2      : num 0.537
+ $ positive_skewness: num 0
+> 
+> library(cmdstanr)
+This is cmdstanr version 0.5.3
+- CmdStanR documentation and vignettes: mc-stan.org/cmdstanr
+- CmdStan path: /home/pkroy/.cmdstan/cmdstan-2.33.1
+- CmdStan version: 2.33.1
+> stan_file <- paste0(fpath,"StanFiles/Full_GLGC_HN.stan")
+> mod <- cmdstan_model(stan_file, compile = TRUE)
+> mod$check_syntax(pedantic = TRUE)
+Warning: The parameter ell2 has no priors. This means either no prior is
+    provided, or the prior(s) depend on data variables. In the later case,
+    this may be a false positive.
+Warning: The parameter ell1 has no priors. This means either no prior is
+    provided, or the prior(s) depend on data variables. In the later case,
+    this may be a false positive.
+
+Stan program is syntactically correct
+> mod$print()
+functions{ // functions starts
+
+matrix my_gp_matern32_cov(array[] vector x, array[] vector y, real sigma, real lscale){
+  return gp_matern32_cov(x, y, sigma, lscale);
+}
+
+/* stan function for backsolve*/
+vector mdivide_left_tri_upp(matrix U, vector b) { 
+  int n = rows(U);
+  vector[n] x = b; 
+  real cs;
+  array[n] int ids = sort_desc(linspaced_int_array(n, 1, n));
+  for (i in ids){
+    x[i] = x[i]/U[i,i];
+    cs = 0;
+    for (j in (i+1):n){
+      cs = cs + x[j]*U[i,j];
+  }
+  x[i] = x[i] - cs/U[i,i];
+}
+return x;
+}
+ 
+/* */
+array[] vector predict_fullglgc_rng(vector y, array[] vector obsXb, array[] vector predXb, array[] vector obsCoords, array[] vector predCoords, array[] vector z1, vector gamma, vector sigma1, vector sigma2, vector lscale1, vector lscale2, vector tau, int nsize, int psize, int postsize){
+    array[postsize] vector[psize] out;
+    int nprint = postsize %/% 10;
+    for(l in 1:postsize) {
+      if(l%nprint == 0) print("Starts for posterior sample : ", l); 
+      matrix[nsize,psize] C10 = gp_matern32_cov(obsCoords, predCoords, 1, lscale1[l]);
+      matrix[nsize,psize] C20 = gp_matern32_cov(obsCoords, predCoords, 1, lscale2[l]);
+      matrix[nsize,nsize] Ch1 = cholesky_decompose(add_diag(gp_matern32_cov(obsCoords, 1, lscale1[l]), rep_vector(1e-7,nsize)));
+      matrix[nsize,nsize] Ch2 = cholesky_decompose(add_diag(gp_matern32_cov(obsCoords, 1, lscale2[l]), rep_vector(square(tau[l])*inv_square(sigma2[l]),nsize)));
+      vector[nsize] res = y - obsXb[l] - gamma[l]*exp(z1[l]);
+      for(i in 1:psize) {
+        row_vector[nsize] c10 = to_row_vector(C10[1:nsize,i]);
+        real m1 =  c10*mdivide_left_tri_upp(Ch1',mdivide_left_tri_low(Ch1, z1[l]));
+        real v1 = square(sigma1[l])*(1 - dot_self(mdivide_left_tri_low(Ch1, c10')));
+        real z10 = normal_rng(m1, sqrt(v1));
+        row_vector[nsize] c20 = to_row_vector(C20[1:nsize,i]);
+        real m2 =  predXb[l][i] + gamma[l] * exp(z10) + c20*mdivide_left_tri_upp(Ch2',mdivide_left_tri_low(Ch2, res));
+        real v2 = square(sigma2[l])*(1 + square(tau[l])*inv_square(sigma2[l]) - dot_self(mdivide_left_tri_low(Ch2, c20')));
+        out[l][i] = normal_rng(m2, sqrt(v2));
+      }
+    }
+    return out;
+  }
+  
+} // functions ends
+
+data {
+  int<lower=0> N;
+  int<lower=0> P;
+  vector[N] y;
+  matrix[N,P] X;
+  array[N] vector[2] coords;
+  vector[P] mu_theta;
+  matrix[P,P] V_theta;
+  real<lower=0> a;
+  real<lower=0> b;
+  int<lower=0, upper=1> positive_skewness;
+}
+
+transformed data {
+  vector[N] jitter = rep_vector(1e-9, N);
+  cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
+  int skewness;
+  if(positive_skewness==0){
+    skewness = -1;
+    } else {
+      skewness = 1;
+    }
+}
+
+
+parameters{
+  vector[P] theta_std;
+  real<lower = 0> abs_gamma;
+  real<lower = 0> sigma1;
+  real<lower = 0> sigma2;
+  real<lower = 0> tau;
+  real<lower = 0> ell1;
+  real<lower = 0> ell2;
+  vector[N] noise1;
+}
+
+transformed parameters {
+  real gamma = skewness * abs_gamma;
+  // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
+  vector[P] theta = mu_theta + chol_V_theta * theta_std;
+  }
+
+model {
+  matrix[N,N] C1 = gp_matern32_cov(coords, sigma1, ell1);
+  matrix[N,N] C2 = gp_matern32_cov(coords, sigma2, ell2);
+  vector[N] z1 = cholesky_decompose(add_diag(C1,jitter)) * noise1;
+  matrix[N,N] L = cholesky_decompose(add_diag(C2, rep_vector(square(tau), N) + jitter));
+
+  theta_std ~ std_normal();
+  abs_gamma ~ std_normal();
+  sigma1 ~ std_normal();
+  sigma2 ~ std_normal();
+  tau ~ std_normal();
+  ell1 ~ inv_gamma(a,b);
+  ell2 ~ inv_gamma(a,b);
+  noise1 ~ std_normal();
+  vector[N] mu = X * theta + gamma * exp(z1);
+  y ~ multi_normal_cholesky(mu, L);
+}
+
+generated quantities{
+  
+}
+
+> cmdstan_fit <- mod$sample(data = input, 
++                           chains = 4,
++                           parallel_chains = 4,
++                           iter_warmup = 1000,
++                           iter_sampling = 1000,
++                           adapt_delta = 0.99,
++                           max_treedepth = 15,
++                           step_size = 0.25)
+Running MCMC with 4 parallel chains...
+
+Chain 1 Iteration:    1 / 2000 [  0%]  (Warmup) 
+Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
+Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 4 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 4 
+Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 4 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 4 
+Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 3 Exception: gp_matern32_cov: magnitude is inf, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 95, column 2 to column 57)
+Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 3 
+Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 4 Exception: gp_matern32_cov: magnitude is 0, but must be positive finite! (in '/tmp/RtmpBRvt3f/model-39ad7b7d2d54ec.stan', line 94, column 2 to column 57)
+Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 4 
+Chain 3 Iteration:  100 / 2000 [  5%]  (Warmup) 
+Chain 4 Iteration:  100 / 2000 [  5%]  (Warmup) 
+Chain 1 Iteration:  100 / 2000 [  5%]  (Warmup) 
+Chain 3 Iteration:  200 / 2000 [ 10%]  (Warmup) 
+Chain 4 Iteration:  200 / 2000 [ 10%]  (Warmup) 
+Chain 1 Iteration:  200 / 2000 [ 10%]  (Warmup) 
+Chain 3 Iteration:  300 / 2000 [ 15%]  (Warmup) 
+Chain 4 Iteration:  300 / 2000 [ 15%]  (Warmup) 
+Chain 3 Iteration:  400 / 2000 [ 20%]  (Warmup) 
+Chain 1 Iteration:  300 / 2000 [ 15%]  (Warmup) 
+Chain 4 Iteration:  400 / 2000 [ 20%]  (Warmup) 
+Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+Chain 1 Iteration:  400 / 2000 [ 20%]  (Warmup) 
+Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+Chain 3 Iteration:  600 / 2000 [ 30%]  (Warmup) 
+Chain 3 Iteration:  700 / 2000 [ 35%]  (Warmup) 
+Chain 4 Iteration:  600 / 2000 [ 30%]  (Warmup) 
+Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+Chain 3 Iteration:  800 / 2000 [ 40%]  (Warmup) 
+Chain 1 Iteration:  600 / 2000 [ 30%]  (Warmup) 
+Chain 4 Iteration:  700 / 2000 [ 35%]  (Warmup) 
+Chain 3 Iteration:  900 / 2000 [ 45%]  (Warmup) 
+Chain 1 Iteration:  700 / 2000 [ 35%]  (Warmup) 
+Chain 4 Iteration:  800 / 2000 [ 40%]  (Warmup) 
+Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+Chain 3 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+Chain 1 Iteration:  800 / 2000 [ 40%]  (Warmup) 
+Chain 4 Iteration:  900 / 2000 [ 45%]  (Warmup) 
+Chain 3 Iteration: 1100 / 2000 [ 55%]  (Sampling) 
+Chain 1 Iteration:  900 / 2000 [ 45%]  (Warmup) 
+Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+Chain 3 Iteration: 1200 / 2000 [ 60%]  (Sampling) 
+Chain 4 Iteration: 1100 / 2000 [ 55%]  (Sampling) 
+Chain 3 Iteration: 1300 / 2000 [ 65%]  (Sampling) 
+Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+Chain 4 Iteration: 1200 / 2000 [ 60%]  (Sampling) 
+Chain 3 Iteration: 1400 / 2000 [ 70%]  (Sampling) 
+Chain 1 Iteration: 1100 / 2000 [ 55%]  (Sampling) 
+Chain 4 Iteration: 1300 / 2000 [ 65%]  (Sampling) 
+Chain 3 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+Chain 1 Iteration: 1200 / 2000 [ 60%]  (Sampling) 
+Chain 4 Iteration: 1400 / 2000 [ 70%]  (Sampling) 
+Chain 3 Iteration: 1600 / 2000 [ 80%]  (Sampling) 
+Chain 2 Iteration:  100 / 2000 [  5%]  (Warmup) 
+Chain 1 Iteration: 1300 / 2000 [ 65%]  (Sampling) 
+Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+Chain 3 Iteration: 1700 / 2000 [ 85%]  (Sampling) 
+Chain 1 Iteration: 1400 / 2000 [ 70%]  (Sampling) 
+Chain 4 Iteration: 1600 / 2000 [ 80%]  (Sampling) 
+Chain 3 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
+Chain 2 Iteration:  200 / 2000 [ 10%]  (Warmup) 
+Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+Chain 4 Iteration: 1700 / 2000 [ 85%]  (Sampling) 
+Chain 3 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
+Chain 2 Iteration:  300 / 2000 [ 15%]  (Warmup) 
+Chain 1 Iteration: 1600 / 2000 [ 80%]  (Sampling) 
+Chain 2 Iteration:  400 / 2000 [ 20%]  (Warmup) 
+Chain 4 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
+Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
+Chain 3 finished in 127932.0 seconds.
+Chain 1 Iteration: 1700 / 2000 [ 85%]  (Sampling) 
+Chain 4 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
+Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+Chain 1 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
+Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+Chain 4 finished in 136998.0 seconds.
+Chain 2 Iteration:  600 / 2000 [ 30%]  (Warmup) 
+Chain 1 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
+Chain 2 Iteration:  700 / 2000 [ 35%]  (Warmup) 
+Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
+Chain 1 finished in 143291.0 seconds.
+Chain 2 Iteration:  800 / 2000 [ 40%]  (Warmup) 
+Chain 2 Iteration:  900 / 2000 [ 45%]  (Warmup) 
+Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 1100 / 2000 [ 55%]  (Sampling) 
+Chain 2 Iteration: 1200 / 2000 [ 60%]  (Sampling) 
+Chain 2 Iteration: 1300 / 2000 [ 65%]  (Sampling) 
+Chain 2 Iteration: 1400 / 2000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+Chain 2 Iteration: 1600 / 2000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 1700 / 2000 [ 85%]  (Sampling) 
+Chain 2 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
+Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
+Chain 2 finished in 163152.0 seconds.
+
+All 4 chains finished successfully.
+Mean chain execution time: 142843.2 seconds.
+Total execution time: 163157.3 seconds.
+
+> elapsed_time <- cmdstan_fit$time()
+> elapsed_time
+$total
+[1] 163157.3
+
+$chains
+  chain_id   warmup sampling  total
+1        1  83560.4  59731.1 143291
+2        2 147065.0  16086.9 163152
+3        3  63594.7  64337.6 127932
+4        4  75557.4  61440.1 136998
+
+> elapsed_time$total/3600
+[1] 45.32146
+> 
+> cmdstan_fit$cmdstan_diagnose()
+Processing csv files: /tmp/RtmpBRvt3f/Full_GLGC_HN-202311260136-1-79dd7f.csv, /tmp/RtmpBRvt3f/Full_GLGC_HN-202311260136-2-79dd7f.csv, /tmp/RtmpBRvt3f/Full_GLGC_HN-202311260136-3-79dd7f.csv, /tmp/RtmpBRvt3f/Full_GLGC_HN-202311260136-4-79dd7f.csv
+
+Checking sampler transitions treedepth.
+Treedepth satisfactory for all transitions.
+
+Checking sampler transitions for divergences.
+No divergent transitions found.
+
+Checking E-BFMI - sampler transitions HMC potential energy.
+E-BFMI satisfactory.
+
+Effective sample size satisfactory.
+
+Split R-hat values satisfactory all parameters.
+
+Processing complete, no problems detected.
+> sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
+> str(sampler_diag)
+draws_df [4,000 × 9] (S3: draws_df/draws/tbl_df/tbl/data.frame)
+ $ treedepth__  : num [1:4000] 9 8 8 9 8 8 8 8 8 8 ...
+ $ divergent__  : num [1:4000] 0 0 0 0 0 0 0 0 0 0 ...
+ $ energy__     : num [1:4000] 630 650 638 621 622 ...
+ $ accept_stat__: num [1:4000] 0.981 1 0.984 1 0.999 ...
+ $ stepsize__   : num [1:4000] 0.013 0.013 0.013 0.013 0.013 ...
+ $ n_leapfrog__ : num [1:4000] 511 511 511 511 255 255 255 255 255 255 ...
+ $ .chain       : int [1:4000] 1 1 1 1 1 1 1 1 1 1 ...
+ $ .iteration   : int [1:4000] 1 2 3 4 5 6 7 8 9 10 ...
+ $ .draw        : int [1:4000] 1 2 3 4 5 6 7 8 9 10 ...
+> 
+> ## Posterior summaries
+> pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
+> pars_true_df <- tibble(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
+> fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
+> fixed_summary <- inner_join(pars_true_df, fit_summary)
+Joining with `by = join_by(variable)`
+> fixed_summary %>% print(digits = 3)
+# A tibble: 9 × 10
+  variable  true   mean     sd  `50%` `2.5%` `97.5%`  rhat ess_bulk ess_tail
+  <chr>    <dbl>  <dbl>  <dbl>  <dbl>  <dbl>   <dbl> <dbl>    <dbl>    <dbl>
+1 theta[1]  5     4.73  0.478   4.70   3.86    5.75   1.00     895.    1655.
+2 theta[2] -1    -0.980 0.0332 -0.979 -1.05   -0.914  1.00    4959.    3540.
+3 theta[3]  1     1.06  0.0341  1.06   0.989   1.12   1.00    5061.    3305.
+4 sigma1    1     0.948 0.240   0.907  0.592   1.54   1.01     537.    1372.
+5 sigma2    1     0.995 0.206   0.967  0.675   1.50   1.00    1770.    1912.
+6 ell1      0.2   0.225 0.0401  0.219  0.163   0.322  1.00     764.    1619.
+7 ell2      0.2   0.314 0.0967  0.293  0.188   0.558  1.00     796.    1626.
+8 tau       0.5   0.535 0.0278  0.535  0.482   0.592  1.00    3049.    3060.
+9 gamma    -0.75 -1.10  0.430  -1.06  -2.03   -0.380  1.00     657.    1245.
+> 
+> ## Posterior draws
+> draws_df <- cmdstan_fit$draws(format = "df")
+> draws_df
+# A draws_df: 1000 iterations, 4 chains, and 514 variables
+   lp__ theta_std[1] theta_std[2] theta_std[3] abs_gamma sigma1 sigma2  tau
+1  -384         0.31        -1.00          1.0      0.69   1.04   1.04 0.55
+2  -364         0.25        -1.01          1.1      0.24   1.32   1.00 0.53
+3  -385         0.50        -1.00          1.0      0.54   1.12   1.40 0.57
+4  -369         0.36        -0.94          1.0      0.59   0.98   0.96 0.51
+5  -349         0.23        -0.95          1.0      0.41   1.35   1.19 0.54
+6  -324         0.41        -1.00          1.1      0.69   1.12   1.09 0.50
+7  -358         0.38        -1.00          1.1      0.44   1.04   1.11 0.54
+8  -368         0.26        -1.01          1.1      0.61   0.90   1.03 0.50
+9  -328         0.36        -0.97          1.0      0.84   0.90   1.33 0.57
+10 -305         0.50        -1.01          1.1      1.07   0.98   0.84 0.51
+# ... with 3990 more draws, and 506 more variables
+# ... hidden reserved variables {'.chain', '.iteration', '.draw'}
+> 
+> library(bayesplot)
+This is bayesplot version 1.10.0
+- Online documentation and vignettes at mc-stan.org/bayesplot
+- bayesplot theme set to bayesplot::theme_default()
+   * Does _not_ affect other ggplot2 plots
+   * See ?bayesplot_theme_set for details on theme setting
+> color_scheme_set("brewer-Spectral")
+> mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
+> 
+> ## Recovery of random effect z1
+> size_post_samples <- nrow(draws_df); size_post_samples
+[1] 4000
+> post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
+ num [1:4000] 0.229 0.176 0.295 0.187 0.202 ...
+> post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
+ num [1:4000] 1.044 1.325 1.123 0.978 1.348 ...
+> post_noise1 <- as_tibble(draws_df) %>% select(starts_with("noise1[")) %>% as.matrix() %>% unname(); str(post_noise1)
+ num [1:4000, 1:500] 0.391 0.127 0.806 -1.395 -0.264 ...
+> post_z1 <- array(0, dim = c(size_post_samples,nsize)); str(post_z1)
+ num [1:4000, 1:500] 0 0 0 0 0 0 0 0 0 0 ...
+> obsDistMat <- fields::rdist(obsCoords)
+> l <- 1
+> for(l in 1:size_post_samples){
++   C1 <- matern32(d = obsDistMat, sigma = post_sigma1[l],  lscale = post_ell1[l])
++   post_z1[l,] <- drop(crossprod(chol(C1),post_noise1[l,]))
++ }
+> str(post_z1)
+ num [1:4000, 1:500] 0.408 0.168 0.906 -1.365 -0.356 ...
+> 
+> z1_summary <- tibble(z1 = obsZ1,
++                      post.mean = apply(post_z1, 2, mean),
++                      post.sd = apply(post_z1, 2, sd),
++                      post.q2.5 = apply(post_z1, 2, quantile2.5),
++                      post.q50 = apply(post_z1, 2, quantile50),
++                      post.q97.5 = apply(post_z1, 2, quantile97.5))
+> z1_summary
+# A tibble: 500 × 6
+         z1 post.mean post.sd post.q2.5 post.q50 post.q97.5
+      <dbl>     <dbl>   <dbl>     <dbl>    <dbl>      <dbl>
+ 1  0.366      -0.290   0.686    -1.81    -0.233      0.876
+ 2  1.15        0.638   0.431    -0.176    0.621      1.56 
+ 3  0.00881     0.487   0.464    -0.428    0.490      1.42 
+ 4 -0.146      -0.478   0.607    -1.85    -0.434      0.573
+ 5  1.05        0.448   0.495    -0.561    0.451      1.41 
+ 6 -0.524      -0.498   0.672    -2.04    -0.423      0.620
+ 7 -1.63       -0.790   0.612    -2.06    -0.776      0.359
+ 8 -1.31       -0.637   0.638    -2.08    -0.583      0.499
+ 9  1.67        1.19    0.447     0.426    1.17       2.14 
+10  0.0385      0.450   0.560    -0.767    0.487      1.45 
+# ℹ 490 more rows
+> z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
+[1] 0.918
+> 
+> save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
+> 
+> ##################################################################
+> ## Independent prediction at each predictions sites
+> ##################################################################
+> source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
+> exsf <- expose_cmdstanr_functions(model_path = stan_file)
+Warning message:
+In readLines(temp_cpp_file) :
+  incomplete final line found on '/tmp/RtmpBRvt3f/model-39ad7b6816182e.cpp'
+> args(exsf$predict_fullglgc_rng)
+function (y, obsXb, predXb, obsCoords, predCoords, z1, gamma, 
+    sigma1, sigma2, lscale1, lscale2, tau, nsize, psize, postsize, 
+    base_rng__ = <pointer: 0x8183ae0>, pstream__ = <pointer: 0x14a2d9badce0>) 
+NULL
+> 
+> size_post_samples <- nrow(draws_df); size_post_samples
+[1] 4000
+> psize <- nrow(prdCoords); psize
+[1] 9500
+> post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
+ num [1:4000] 1.044 1.325 1.123 0.978 1.348 ...
+> post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
+ num [1:4000] 1.036 1 1.4 0.958 1.192 ...
+> post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+ num [1:4000] 0.55 0.528 0.569 0.514 0.538 ...
+> post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
+ num [1:4000] 0.229 0.176 0.295 0.187 0.202 ...
+> post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+ num [1:4000] 0.229 0.2 0.313 0.196 0.288 ...
+> post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+ num [1:4000] -0.687 -0.245 -0.535 -0.589 -0.41 ...
+> post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+ num [1:4000, 1:3] 4.14 3.96 4.75 4.32 3.89 ...
+> str(post_z1)
+ num [1:4000, 1:500] 0.408 0.168 0.906 -1.365 -0.356 ...
+> 
+> str(obsX)
+ num [1:500, 1:3] 1 1 1 1 1 1 1 1 1 1 ...
+> str(post_theta)
+ num [1:4000, 1:3] 4.14 3.96 4.75 4.32 3.89 ...
+> 
+> obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+ num [1:4000, 1:500] 4.27 4.07 4.87 4.42 3.99 ...
+> prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
+ num [1:4000, 1:9500] 5.11 5.01 5.74 5.34 4.89 ...
+> 
+> str(exsf$my_gp_matern32_cov(x = lapply(1:nsize, function(i) obsCoords[i,]), y = lapply(1:psize, function(i) prdCoords[i,]), sigma = 1, lscale = 1))
+ num [1:500, 1:9500] 0.441 0.401 0.155 0.324 0.446 ...
+> 
+> post_ypred <- exsf$predict_fullglgc_rng(
++   y = obsY, 
++   obsXb = lapply(1:size_post_samples, function(i) obsXtheta[i,]), 
++   predXb = lapply(1:size_post_samples, function(i) prdXtheta[i,]), 
++   obsCoords = lapply(1:nsize, function(i) obsCoords[i,]), 
++   predCoords = lapply(1:psize, function(i) prdCoords[i,]), 
++   z1 = lapply(1:size_post_samples, function(i) post_z1[i,]), 
++   gamma = post_gamma, 
++   sigma1 = post_sigma1, 
++   sigma2 = post_sigma2,
++   lscale1 = post_ell1,
++   lscale2 = post_ell2, 
++   tau = post_tau, 
++   nsize = nsize, 
++   psize = psize,
++   postsize = size_post_samples)

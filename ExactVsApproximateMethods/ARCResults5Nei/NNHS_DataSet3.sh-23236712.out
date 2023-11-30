@@ -1,0 +1,1071 @@
+
+Lmod is automatically replacing "intel/2020.1.217" with "gcc/11.3.0".
+
+
+The following have been reloaded with a version change:
+  1) blis/0.8.1 => blis/0.9.0
+  2) flexiblas/3.0.4 => flexiblas/3.2.0
+  3) gcccore/.9.3.0 => gcccore/.11.3.0
+  4) libfabric/1.10.1 => libfabric/1.15.1
+  5) openmpi/4.0.3 => openmpi/4.1.4
+  6) ucx/1.8.0 => ucx/1.12.1
+
+
+R version 4.2.1 (2022-06-23) -- "Funny-Looking Kid"
+Copyright (C) 2022 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> rm(list=ls())
+> graphics.off()
+> library(fields)
+Loading required package: spam
+Spam version 2.9-1 (2022-08-07) is loaded.
+Type 'help( Spam)' or 'demo( spam)' for a short introduction 
+and overview of this package.
+Help for individual functions is also obtained by adding the
+suffix '.spam' to the function name, e.g. 'help( chol.spam)'.
+
+Attaching package: ‘spam’
+
+The following objects are masked from ‘package:base’:
+
+    backsolve, forwardsolve
+
+Loading required package: viridis
+Loading required package: viridisLite
+
+Try help(fields) to get started.
+> library(Matrix)
+
+Attaching package: ‘Matrix’
+
+The following object is masked from ‘package:spam’:
+
+    det
+
+> library(tidyverse)
+── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.2     ✔ readr     2.1.4
+✔ forcats   1.0.0     ✔ stringr   1.5.0
+✔ ggplot2   3.4.2     ✔ tibble    3.2.1
+✔ lubridate 1.9.2     ✔ tidyr     1.3.0
+✔ purrr     1.0.1     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ tidyr::expand() masks Matrix::expand()
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+✖ tidyr::pack()   masks Matrix::pack()
+✖ tidyr::unpack() masks Matrix::unpack()
+ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+> library(magrittr)
+
+Attaching package: ‘magrittr’
+
+The following object is masked from ‘package:purrr’:
+
+    set_names
+
+The following object is masked from ‘package:tidyr’:
+
+    extract
+
+> library(tidybayes)
+> library(coda)
+> library(nleqslv)
+> 
+> fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
+> fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+> 
+> ######################################################################
+> # Generating the data
+> ######################################################################
+> source(paste0(fpath,"Rutilities/utility_functions.R"))
+> source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set3.R"))
+> 
+> ######################################################################
+> # partition as observed and predicted
+> ######################################################################
+> obsCoords <- coords[idSampled,]
+> prdCoords <- coords[-idSampled,]
+> obsY <- y[idSampled]
+> prdY <- y[-idSampled]
+> obsX <- X[idSampled,]
+> prdX <- X[-idSampled,]
+> obsZ1 <- z1[idSampled]
+> obsZ2 <- z2[idSampled]
+> prdZ1 <- z1[-idSampled]
+> prdZ2 <- z2[-idSampled]
+> 
+> obsDistMat <- fields::rdist(obsCoords)
+> str(obsDistMat)
+ num [1:500, 1:500] 0 0.752 1.208 0.58 0.279 ...
+> obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
+> obsMaxDist <- max(obsDistVec); obsMaxDist
+[1] 2.687155
+> obsMedDist <- median(obsDistVec); obsMedDist
+[1] 1.009752
+> obsMinDist <- min(obsDistVec); obsMinDist
+[1] 0.02
+> rm(obsDistMat)
+> 
+> ################################################################################
+> ## NNGP preparation
+> ################################################################################
+> source(paste0(fpath,"Rutilities/NNMatrix.R"))
+Loading required package: Formula
+Loading required package: RANN
+> nNeighbors <- 5
+> neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
+> str(neiMatInfo)
+List of 5
+ $ ord       : int [1:500] 60 84 313 500 359 394 471 52 139 172 ...
+ $ coords.ord: num [1:500, 1:2] -0.99 -0.99 -0.99 -0.99 -0.97 -0.97 -0.97 -0.95 -0.95 -0.95 ...
+ $ NN_ind    : num [1:499, 1:5] 1 2 1 3 5 6 7 4 8 7 ...
+ $ NN_distM  : num [1:499, 1:10] 0 0.26 0.26 0.28 0.201 ...
+ $ NN_dist   : num [1:499, 1:5] 0.26 0.28 0.48 0.201 0.02 ...
+> obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
+> obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
+> obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
+> obsZ1 <- obsZ1[neiMatInfo$ord]
+> obsZ2 <- obsZ2[neiMatInfo$ord]
+> 
+> ################################################################################
+> # Preparing for Hilbert Space Approximate GP
+> ################################################################################
+> xRangeDat <- c(-1,1)
+> yRangeDat <- c(-1,1)
+> Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
+> quantile(obsDistVec, probs = c(1,2.5,52,50)/100)
+       1%      2.5%       52%       50% 
+0.1166190 0.1886796 1.0384604 1.0097524 
+> 
+> ell_hat <- 0.2
+> c <- 1 + 2*ell_hat; c
+[1] 1.4
+> c <- pmax(1.2, 4.5*ell_hat); c
+[1] 1.2
+> 
+> m1 <- pmax(32,ceiling(3.42*c/ell_hat)); m1
+[1] 32
+> m2 <- pmax(32,ceiling(3.42*c/ell_hat)); m2
+[1] 32
+> mstar <- m1*m2; mstar
+[1] 1024
+> 
+> L <- c*Lstar; L
+[1] 1.2 1.2
+> S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
+> str(S)
+ int [1:1024, 1:2] 1 1 1 1 1 1 1 1 1 1 ...
+> lambda <- ((pi*S)/(2*L))^2
+> str(lambda)
+ num [1:1024, 1:2] 1.71 1.71 1.71 1.71 1.71 ...
+> head(lambda)
+         [,1]      [,2]
+[1,] 1.713473  1.713473
+[2,] 1.713473  6.853892
+[3,] 1.713473 15.421257
+[4,] 1.713473 27.415568
+[5,] 1.713473 42.836825
+[6,] 1.713473 61.685028
+> 
+> ## Prior elicitation
+> lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+      1% 
+0.116619 
+> uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+     99% 
+2.161481 
+> 
+> library(nleqslv)
+> ab <- nleqslv(c(5,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+> ab
+[1] 3.0682196 0.9937193
+> curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
+> summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.1001  0.2494  0.3623  0.4722  0.5481  4.5682 
+> 
+> ## Exponential and PC prior
+> lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
+[1] 4.60517
+> lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+[1] 4.60517
+> lambda_tau <- -log(0.01)/1; lambda_tau
+[1] 4.60517
+> pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+[1] 0.99
+> lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
+[1] 0.5370505
+> lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
+[1] 0.5370505
+> pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
+  1% 
+0.01 
+> summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+  0.0648   0.3743   0.7625   3.4918   1.7308 402.4695 
+> 
+> ## Stan input
+> P <- 3
+> mu_theta <- c(mean(obsY),rep(0,P-1))
+> V_theta <- diag(c(10,rep(1,P-1)))
+> 
+> # Keep in mind that the data should be ordered following nearest neighbor settings
+> input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1)
+> str(input)
+List of 22
+ $ N                : num 500
+ $ M                : num 1024
+ $ K                : num 5
+ $ P                : num 3
+ $ y                : num [1:500] 4.2 6.14 7.56 5.22 5.9 ...
+ $ X                : num [1:500, 1:3] 1 1 1 1 1 1 1 1 1 1 ...
+ $ neiID            : num [1:499, 1:5] 1 2 1 3 5 6 7 4 8 7 ...
+ $ site2neiDist     : num [1:499, 1:5] 0.26 0.28 0.48 0.201 0.02 ...
+ $ neiDistMat       : num [1:499, 1:10] 0 0.26 0.26 0.28 0.201 ...
+ $ coords           : num [1:500, 1:2] -0.99 -0.99 -0.99 -0.99 -0.97 -0.97 -0.97 -0.95 -0.95 -0.95 ...
+ $ L                : num [1:2] 1.2 1.2
+ $ lambda           : num [1:1024, 1:2] 1.71 1.71 1.71 1.71 1.71 ...
+ $ mu_theta         : num [1:3] 7.29 0 0
+ $ V_theta          : num [1:3, 1:3] 10 0 0 0 1 0 0 0 1
+ $ lambda_sigma1    : num 4.61
+ $ lambda_sigma2    : num 4.61
+ $ lambda_tau       : num 4.61
+ $ a                : num 3.07
+ $ b                : num 0.994
+ $ lambda_ell1      : num 0.537
+ $ lambda_ell2      : num 0.537
+ $ positive_skewness: num 1
+> 
+> library(cmdstanr)
+This is cmdstanr version 0.5.3
+- CmdStanR documentation and vignettes: mc-stan.org/cmdstanr
+- CmdStan path: /home/pkroy/.cmdstan/cmdstan-2.33.1
+- CmdStan version: 2.33.1
+> stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_HN.stan")
+> mod <- cmdstan_model(stan_file, compile = TRUE)
+> mod$check_syntax(pedantic = TRUE)
+Warning: The parameter ell2 has no priors. This means either no prior is
+    provided, or the prior(s) depend on data variables. In the later case,
+    this may be a false positive.
+Warning: The parameter ell1 has no priors. This means either no prior is
+    provided, or the prior(s) depend on data variables. In the later case,
+    this may be a false positive.
+
+Stan program is syntactically correct
+> mod$print()
+functions {
+  
+  matrix my_gp_matern32_cov(array[] vector x, array[] vector y, real sigma, real lscale){
+    return gp_matern32_cov(x, y, sigma, lscale);
+  }
+  
+  vector matern32_distance_vector(vector d, real sigma, real lscale){
+   vector[size(d)] out;
+   vector[size(d)] ds = sqrt(3)*d*inv(lscale);
+   out = square(sigma) * ((1 + ds) .* exp(-ds));
+   return out;
+  }
+  
+  vector mdivide_left_tri_upp(matrix U, vector b) { 
+    int n = rows(U);
+    vector[n] x = b; 
+    real cs;
+    array[n] int ids = sort_desc(linspaced_int_array(n, 1, n));
+    for (i in ids){
+      x[i] = x[i]/U[i,i];
+      cs = 0;
+      for (j in (i+1):n){
+        cs = cs + x[j]*U[i,j];
+        }
+      x[i] = x[i] - cs/U[i,i];
+    }
+    return x;
+  }
+  
+  array[] vector predict_nnhsglgc_rng(vector y, matrix obsX, matrix predX, array[] vector obsCoords, array[] vector pred2obsDist, array[,] int pred2obsNeiID, array[] vector beta, array[] vector z1, array[] vector z1pred, vector gamma, vector sigma2, vector lscale2, vector tau, int nsize, int psize, int postsize){
+    array[postsize] vector[psize] out;
+    int nprint = postsize %/% 10;
+    int m = dims(pred2obsDist)[2];
+    int p = dims(obsX)[2];
+    for(l in 1:postsize) {
+      if(l%nprint == 0) print("Starts for prediction location : ", l);
+      for(i in 1:psize) {
+        vector[m] res = y[pred2obsNeiID[i,1:m]] - obsX[pred2obsNeiID[i,1:m],1:p]*beta[l] - gamma[l] * exp(z1[l][pred2obsNeiID[i,1:m]]);
+        vector[m] c20 = matern32_distance_vector(pred2obsDist[i], 1, lscale2[l]);
+        matrix[m,m] Ch2 = cholesky_decompose(add_diag(gp_matern32_cov(obsCoords[pred2obsNeiID[i,1:m]], 1, lscale2[l]), rep_vector(square(tau[l])*inv_square(sigma2[l]), m)));
+        real mu2 =  predX[i,1:p]*beta[l] + gamma[l] * exp(z1pred[l][i]) + c20'*mdivide_left_tri_upp(Ch2',mdivide_left_tri_low(Ch2, res));
+        real v2 = square(sigma2[l])*(1 + square(tau[l])*inv_square(sigma2[l]) - dot_self(mdivide_left_tri_low(Ch2, c20)));
+        out[l][i] = normal_rng(mu2, sqrt(v2));
+      }
+    }
+    return out;
+  }
+
+  
+    // nearest neighbor approximimation of data likelihood with matern 1/2 correlation
+    real vecchia_matern12_lpdf(vector y, vector Xbeta, real sigmasq, real tausq, real lscale, matrix site2neiDist, matrix neiDistMat, array[,] int neiID, int N, int K) {
+    
+    vector[N] V;
+    vector[N] resid = y - Xbeta;
+    vector[N] U = resid;
+    real variance_ratio_plus_1 = tausq * inv(sigmasq) + 1; // variance ratio plus 1
+    int h;
+          
+    for (i in 2:N) {
+      int dim = (i < (K + 1))? (i - 1) : K;
+      matrix[dim, dim] neiCorMat;
+      matrix[dim, dim] neiCorChol;
+      vector[dim] site2neiCor;
+      vector[dim] v;
+      row_vector[dim] v2;
+      
+      if(dim == 1){
+        neiCorMat[1, 1] = variance_ratio_plus_1;
+        } else {
+          h = 0;
+          for (j in 1:(dim - 1)){
+            for (k in (j + 1):dim){
+              h = h + 1;
+              neiCorMat[j, k] = exp(-inv(lscale) * neiDistMat[(i - 1), h]);
+              neiCorMat[k, j] = neiCorMat[j, k];
+              }
+            }
+          for(j in 1:dim){
+            neiCorMat[j, j] = variance_ratio_plus_1;
+            }
+          }
+        neiCorChol = cholesky_decompose(neiCorMat);
+        site2neiCor = to_vector(exp(-inv(lscale) * site2neiDist[(i - 1), 1: dim]));
+        v = mdivide_left_tri_low(neiCorChol, site2neiCor);
+        V[i] = variance_ratio_plus_1 - dot_self(v);
+        v2 = mdivide_right_tri_low(v', neiCorChol);
+        U[i] = U[i] - v2 * resid[neiID[(i - 1), 1:dim]];
+        }
+      V[1] = variance_ratio_plus_1;
+      return - 0.5 * ( 1 / sigmasq * dot_product(U, (U ./ V)) + sum(log(V)) + N * log(sigmasq));
+   }
+   
+   // nearest neighbor approximimation of data likelihood with matern 3/2 correlation
+    real vecchia_matern32_lpdf(vector y, vector Xbeta, real sigmasq, real tausq,
+                             real lscale, matrix site2neiDist, matrix neiDistMat, 
+                             array[,] int neiID, int N, int K) {
+                               
+          vector[N] V;
+          vector[N] resid = y - Xbeta;
+          vector[N] U = resid;
+          real variance_ratio_plus_1 = tausq*inv(sigmasq) + 1; // variance ratio plus 1
+          int dim;
+          int h;
+
+          for (i in 2:N) {
+            dim = (i < (K + 1))? (i - 1) : K;
+            matrix[dim, dim] neiCorMat;
+              matrix[dim, dim] neiCorChol;
+              vector[dim] site2neiCor;
+              vector[dim] v;
+              row_vector[dim] v2;
+
+              if(dim == 1){neiCorMat[1, 1] = variance_ratio_plus_1;}
+              else{
+                  h = 0;
+                  for (j in 1:(dim - 1)){
+                      for (k in (j + 1):dim){
+                          h = h + 1;
+                          neiCorMat[j, k] = (1 + sqrt(3) * neiDistMat[(i - 1), h] * inv(lscale)) * exp(-sqrt(3) * neiDistMat[(i - 1), h] * inv(lscale));
+                          neiCorMat[k, j] = neiCorMat[j, k];
+                      }
+                  }
+                  for(j in 1:dim){
+                      neiCorMat[j, j] = variance_ratio_plus_1;
+                  }
+              }
+
+              neiCorChol = cholesky_decompose(neiCorMat);
+              site2neiCor = to_vector((1 + sqrt(3) * site2neiDist[(i - 1), 1: dim] * inv(lscale)) .* exp(-sqrt(3) * site2neiDist[(i - 1), 1: dim] * inv(lscale)));
+             v = mdivide_left_tri_low(neiCorChol, site2neiCor);
+             V[i] = variance_ratio_plus_1 - dot_self(v);
+             v2 = mdivide_right_tri_low(v', neiCorChol);
+             U[i] = U[i] - v2 * resid[neiID[(i - 1), 1:dim]];
+          }
+          V[1] = variance_ratio_plus_1;
+          return - 0.5 * ( 1 / sigmasq * dot_product(U, (U ./ V)) +
+                          sum(log(V)) + N * log(sigmasq));
+      }
+
+
+  // spectral density for Hilbert space GP with matern 1/2 correlation
+  vector spdMatern12(vector lambda1, vector lambda2, real sigmasq, real lscale, int M) {
+    vector[M] matern12spd;
+    for(i in 1:M){
+      matern12spd[i] = sigmasq * 2 * pi() * square(lscale) * inv(pow(1 + square(lscale) * (lambda1[i] + lambda2[i]), 1.5));
+      }
+    return(matern12spd);
+    }
+
+  // spectral density for Hilbert space GP with matern 3/2 correlation
+  vector spdMatern32(vector lambda1, vector lambda2, real sigmasq, real lscale, int M) {
+    vector[M] matern32spd;
+    for(i in 1:M){
+      matern32spd[i] = sigmasq * 6 * pi() * pow(sqrt(3) * inv(lscale), 3) * inv(pow(pow(sqrt(3)*inv(lscale), 2) + lambda1[i] + lambda2[i], 2.5));
+      }
+    return(matern32spd);
+    }
+  
+  // Laplacian eigenfunction for Hilbert space GP
+  vector eigenfunction(vector L, vector lambda, matrix x) {
+		int nc = cols(x);
+		int nr = rows(x);
+		matrix[nr,nc] h;
+		vector[nr] h1;
+		for (i in 1:nc){
+			h[,i] = inv_sqrt(L[i]) * sin(sqrt(lambda[i]) * (x[,i] + L[i]));
+		}
+		h1 = h[,1];
+		for (i in 2:nc){
+			h1 = h1 .* h[,i];
+		}
+		return h1;
+	}
+
+}
+
+data {
+  int<lower=0> N;
+  int<lower=0> M;
+  int<lower=0> K;
+  int<lower=0> P;
+  vector[N] y;
+  matrix[N,P] X;
+  array[N - 1, K] int neiID;
+  matrix[N - 1, K] site2neiDist;
+  matrix[N - 1, (K * (K - 1)) %/% 2] neiDistMat;
+  matrix[N,2] coords;
+  vector[2] L;
+  matrix[M,2] lambda;
+  vector[P] mu_theta;
+  matrix[P,P] V_theta;
+  real a;
+  real b;
+  int<lower=0, upper=1> positive_skewness;
+}
+
+
+transformed data {
+  matrix[N,M] H;
+  for(i in 1:M){
+    H[,i] = eigenfunction(L, to_vector(lambda[i,]), coords);
+  }
+  cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
+  int skewness;
+  if(positive_skewness==0){
+    skewness = -1;
+    } else {
+      skewness = 1;
+    }
+}
+
+  
+parameters{
+  vector[P] theta_std;
+  real<lower = 0> abs_gamma;
+  real<lower = 0> sigma1;
+  real<lower = 0> sigma2;
+  real<lower = 0> tau;
+  real<lower = 0> ell1;
+  real<lower = 0> ell2;
+  vector[M] noise1;
+}
+
+transformed parameters{
+   real gamma = skewness * abs_gamma;
+  // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
+  vector[P] theta = mu_theta + chol_V_theta * theta_std;
+  vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;
+}
+
+model {
+  vector[N] z1 = H * omega1;
+  theta_std ~ std_normal();
+  abs_gamma ~ std_normal();
+  ell1 ~ inv_gamma(a,b);
+  ell2 ~ inv_gamma(a,b);
+  sigma1 ~ std_normal();
+  sigma2 ~ std_normal();
+  tau ~ std_normal();
+  noise1 ~ std_normal();
+  vector[N] mu = X * theta + gamma * exp(z1);
+  y ~ vecchia_matern32(mu, square(sigma2), square(tau), ell2, site2neiDist, neiDistMat, neiID, N, K);
+}
+
+generated quantities {
+  
+}
+
+
+
+> cmdstan_fit <- mod$sample(data = input, 
++                           chains = 4,
++                           parallel_chains = 4,
++                           iter_warmup = 1000,
++                           iter_sampling = 1000,
++                           adapt_delta = 0.99,
++                           max_treedepth = 15,
++                           step_size = 0.25)
+Running MCMC with 4 parallel chains...
+
+Chain 1 Iteration:    1 / 2000 [  0%]  (Warmup) 
+Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 1 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 1 
+Chain 2 Iteration:    1 / 2000 [  0%]  (Warmup) 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: A is not symmetric. A[1,2] = -nan, but A[2,1] = -nan (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 2 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 2 
+Chain 3 Iteration:    1 / 2000 [  0%]  (Warmup) 
+Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+Chain 3 Exception: Exception: cholesky_decompose: Matrix m is not positive definite (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 128, column 14 to column 57) (in '/tmp/RtmpMGjOcm/model-1d17a82e8eb15c.stan', line 242, column 2 to column 101)
+Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+Chain 3 
+Chain 4 Iteration:    1 / 2000 [  0%]  (Warmup) 
+Chain 3 Iteration:  100 / 2000 [  5%]  (Warmup) 
+Chain 1 Iteration:  100 / 2000 [  5%]  (Warmup) 
+Chain 4 Iteration:  100 / 2000 [  5%]  (Warmup) 
+Chain 1 Iteration:  200 / 2000 [ 10%]  (Warmup) 
+Chain 4 Iteration:  200 / 2000 [ 10%]  (Warmup) 
+Chain 3 Iteration:  200 / 2000 [ 10%]  (Warmup) 
+Chain 1 Iteration:  300 / 2000 [ 15%]  (Warmup) 
+Chain 3 Iteration:  300 / 2000 [ 15%]  (Warmup) 
+Chain 2 Iteration:  100 / 2000 [  5%]  (Warmup) 
+Chain 1 Iteration:  400 / 2000 [ 20%]  (Warmup) 
+Chain 4 Iteration:  300 / 2000 [ 15%]  (Warmup) 
+Chain 3 Iteration:  400 / 2000 [ 20%]  (Warmup) 
+Chain 4 Iteration:  400 / 2000 [ 20%]  (Warmup) 
+Chain 1 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+Chain 4 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+Chain 3 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+Chain 1 Iteration:  600 / 2000 [ 30%]  (Warmup) 
+Chain 3 Iteration:  600 / 2000 [ 30%]  (Warmup) 
+Chain 4 Iteration:  600 / 2000 [ 30%]  (Warmup) 
+Chain 1 Iteration:  700 / 2000 [ 35%]  (Warmup) 
+Chain 3 Iteration:  700 / 2000 [ 35%]  (Warmup) 
+Chain 1 Iteration:  800 / 2000 [ 40%]  (Warmup) 
+Chain 4 Iteration:  700 / 2000 [ 35%]  (Warmup) 
+Chain 3 Iteration:  800 / 2000 [ 40%]  (Warmup) 
+Chain 1 Iteration:  900 / 2000 [ 45%]  (Warmup) 
+Chain 4 Iteration:  800 / 2000 [ 40%]  (Warmup) 
+Chain 3 Iteration:  900 / 2000 [ 45%]  (Warmup) 
+Chain 4 Iteration:  900 / 2000 [ 45%]  (Warmup) 
+Chain 1 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+Chain 1 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+Chain 3 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+Chain 3 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+Chain 4 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+Chain 4 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+Chain 4 Iteration: 1100 / 2000 [ 55%]  (Sampling) 
+Chain 1 Iteration: 1100 / 2000 [ 55%]  (Sampling) 
+Chain 3 Iteration: 1100 / 2000 [ 55%]  (Sampling) 
+Chain 4 Iteration: 1200 / 2000 [ 60%]  (Sampling) 
+Chain 4 Iteration: 1300 / 2000 [ 65%]  (Sampling) 
+Chain 1 Iteration: 1200 / 2000 [ 60%]  (Sampling) 
+Chain 3 Iteration: 1200 / 2000 [ 60%]  (Sampling) 
+Chain 4 Iteration: 1400 / 2000 [ 70%]  (Sampling) 
+Chain 4 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+Chain 1 Iteration: 1300 / 2000 [ 65%]  (Sampling) 
+Chain 3 Iteration: 1300 / 2000 [ 65%]  (Sampling) 
+Chain 4 Iteration: 1600 / 2000 [ 80%]  (Sampling) 
+Chain 4 Iteration: 1700 / 2000 [ 85%]  (Sampling) 
+Chain 1 Iteration: 1400 / 2000 [ 70%]  (Sampling) 
+Chain 3 Iteration: 1400 / 2000 [ 70%]  (Sampling) 
+Chain 4 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
+Chain 4 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
+Chain 1 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+Chain 3 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
+Chain 4 finished in 54666.3 seconds.
+Chain 1 Iteration: 1600 / 2000 [ 80%]  (Sampling) 
+Chain 3 Iteration: 1600 / 2000 [ 80%]  (Sampling) 
+Chain 1 Iteration: 1700 / 2000 [ 85%]  (Sampling) 
+Chain 3 Iteration: 1700 / 2000 [ 85%]  (Sampling) 
+Chain 1 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
+Chain 3 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
+Chain 1 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
+Chain 3 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
+Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
+Chain 1 finished in 68461.9 seconds.
+Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
+Chain 3 finished in 68530.6 seconds.
+Chain 2 Iteration:  200 / 2000 [ 10%]  (Warmup) 
+Chain 2 Iteration:  300 / 2000 [ 15%]  (Warmup) 
+Chain 2 Iteration:  400 / 2000 [ 20%]  (Warmup) 
+Chain 2 Iteration:  500 / 2000 [ 25%]  (Warmup) 
+Chain 2 Iteration:  600 / 2000 [ 30%]  (Warmup) 
+Chain 2 Iteration:  700 / 2000 [ 35%]  (Warmup) 
+Chain 2 Iteration:  800 / 2000 [ 40%]  (Warmup) 
+Chain 2 Iteration:  900 / 2000 [ 45%]  (Warmup) 
+Chain 2 Iteration: 1000 / 2000 [ 50%]  (Warmup) 
+Chain 2 Iteration: 1001 / 2000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 1100 / 2000 [ 55%]  (Sampling) 
+Chain 2 Iteration: 1200 / 2000 [ 60%]  (Sampling) 
+Chain 2 Iteration: 1300 / 2000 [ 65%]  (Sampling) 
+Chain 2 Iteration: 1400 / 2000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 1500 / 2000 [ 75%]  (Sampling) 
+Chain 2 Iteration: 1600 / 2000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 1700 / 2000 [ 85%]  (Sampling) 
+Chain 2 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
+Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
+Chain 2 finished in 86763.1 seconds.
+
+All 4 chains finished successfully.
+Mean chain execution time: 69605.5 seconds.
+Total execution time: 86767.8 seconds.
+
+> elapsed_time <- cmdstan_fit$time()
+> elapsed_time
+$total
+[1] 86767.79
+
+$chains
+  chain_id  warmup sampling   total
+1        1 32662.3 35799.50 68461.9
+2        2 77135.8  9627.32 86763.1
+3        3 33411.7 35118.90 68530.6
+4        4 34374.1 20292.20 54666.3
+
+> elapsed_time$total/3600
+[1] 24.10216
+> 
+> cmdstan_fit$cmdstan_diagnose()
+Processing csv files: /tmp/RtmpaXO1b9/NNHS_GLGC_HN-202311261130-1-655835.csv, /tmp/RtmpaXO1b9/NNHS_GLGC_HN-202311261130-2-655835.csv, /tmp/RtmpaXO1b9/NNHS_GLGC_HN-202311261130-3-655835.csv, /tmp/RtmpaXO1b9/NNHS_GLGC_HN-202311261130-4-655835.csv
+
+Checking sampler transitions treedepth.
+Treedepth satisfactory for all transitions.
+
+Checking sampler transitions for divergences.
+No divergent transitions found.
+
+Checking E-BFMI - sampler transitions HMC potential energy.
+E-BFMI satisfactory.
+
+Effective sample size satisfactory.
+
+Split R-hat values satisfactory all parameters.
+
+Processing complete, no problems detected.
+> sampler_diag <- cmdstan_fit$sampler_diagnostics(format = "df")
+> str(sampler_diag)
+draws_df [4,000 × 9] (S3: draws_df/draws/tbl_df/tbl/data.frame)
+ $ treedepth__  : num [1:4000] 9 9 9 9 9 9 9 9 9 9 ...
+ $ divergent__  : num [1:4000] 0 0 0 0 0 0 0 0 0 0 ...
+ $ energy__     : num [1:4000] 1145 1110 1083 1084 1107 ...
+ $ accept_stat__: num [1:4000] 0.998 0.997 0.995 0.997 1 ...
+ $ stepsize__   : num [1:4000] 0.00947 0.00947 0.00947 0.00947 0.00947 ...
+ $ n_leapfrog__ : num [1:4000] 511 511 511 511 511 511 511 511 511 511 ...
+ $ .chain       : int [1:4000] 1 1 1 1 1 1 1 1 1 1 ...
+ $ .iteration   : int [1:4000] 1 2 3 4 5 6 7 8 9 10 ...
+ $ .draw        : int [1:4000] 1 2 3 4 5 6 7 8 9 10 ...
+> table(sampler_diag$divergent__)
+
+   0 
+4000 
+> max(sampler_diag$treedepth__)
+[1] 9
+> 
+> ## Posterior summaries
+> pars <- c(paste0("theta[",1:P,"]"),"sigma1","sigma2","ell1","ell2","tau","gamma")
+> pars_true_df <- tibble(variable = pars, true = c(theta,sigma1,sigma2,lscale1,lscale2,tau,gamma))
+> fit_summary <- cmdstan_fit$summary(NULL, c("mean","sd","quantile50","quantile2.5","quantile97.5","rhat","ess_bulk","ess_tail"))
+> fixed_summary <- inner_join(pars_true_df, fit_summary)
+Joining with `by = join_by(variable)`
+> fixed_summary %>% print(digits = 3)
+# A tibble: 9 × 10
+  variable  true   mean     sd  `50%` `2.5%` `97.5%`  rhat ess_bulk ess_tail
+  <chr>    <dbl>  <dbl>  <dbl>  <dbl>  <dbl>   <dbl> <dbl>    <dbl>    <dbl>
+1 theta[1]   5    4.89  0.512   4.88   3.93    5.90   1.00    1254.    1152.
+2 theta[2]  -1   -0.959 0.0374 -0.959 -1.03   -0.887  1.00    6013.    2777.
+3 theta[3]   1    1.01  0.0387  1.01   0.933   1.08   1.00    6594.    3489.
+4 sigma1     1    1.13  0.234   1.10   0.775   1.68   1.00     769.    1944.
+5 sigma2     1    1.15  0.232   1.13   0.788   1.69   1.00    1908.    2239.
+6 ell1       0.2  0.222 0.0340  0.218  0.166   0.300  1.00     738.    1741.
+7 ell2       0.2  0.264 0.0911  0.244  0.150   0.514  1.00    1316.    2177.
+8 tau        0.5  0.545 0.0347  0.544  0.481   0.616  1.00    3620.    3382.
+9 gamma      1.5  1.43  0.464   1.40   0.621   2.41   1.00     929.    1611.
+> 
+> ## Posterior draws
+> draws_df <- cmdstan_fit$draws(format = "df")
+> draws_df
+# A draws_df: 1000 iterations, 4 chains, and 2062 variables
+   lp__ theta_std[1] theta_std[2] theta_std[3] abs_gamma sigma1 sigma2  tau
+1  -595        -0.98        -1.01         1.01      2.19   0.87   0.73 0.53
+2  -607        -0.59        -0.92         1.04      1.78   0.87   1.50 0.52
+3  -550        -0.72        -0.93         1.00      1.79   0.98   1.22 0.51
+4  -593        -0.72        -0.97         1.00      2.19   1.16   1.06 0.56
+5  -606        -0.66        -0.93         1.04      0.75   1.21   1.08 0.51
+6  -574        -0.76        -0.97         1.01      1.97   1.12   1.16 0.50
+7  -568        -0.85        -0.90         1.09      1.18   1.03   1.24 0.57
+8  -578        -0.91        -1.00         0.99      1.86   1.00   0.82 0.50
+9  -605        -0.78        -0.86         1.03      1.51   1.12   2.00 0.57
+10 -551        -0.69        -0.92         0.96      2.06   1.05   1.64 0.55
+# ... with 3990 more draws, and 2054 more variables
+# ... hidden reserved variables {'.chain', '.iteration', '.draw'}
+> 
+> library(bayesplot)
+This is bayesplot version 1.10.0
+- Online documentation and vignettes at mc-stan.org/bayesplot
+- bayesplot theme set to bayesplot::theme_default()
+   * Does _not_ affect other ggplot2 plots
+   * See ?bayesplot_theme_set for details on theme setting
+> color_scheme_set("brewer-Spectral")
+> mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
+> 
+> ## Recovery of random effect z1
+> size_post_samples <- nrow(draws_df); size_post_samples
+[1] 4000
+> post_omega1 <- as_tibble(draws_df) %>% select(starts_with("omega1[")) %>% as.matrix() %>% unname(); str(post_omega1)
+ num [1:4000, 1:1024] 0.0768 0.0416 0.2465 -0.5455 1.0919 ...
+> eigenfunction_compute <- function(x, L, lambda) { 
++   apply(sqrt(1/L) * sin(sqrt(lambda) %*% diag(x + L)), 1, prod)
++ }
+> obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda)))
+> str(obsH)
+ num [1:500, 1:1024] 0.203 0.225 0.219 0.105 0.216 ...
+> post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega1[l,])); str(post_z1)
+ num [1:4000, 1:500] -0.4253 -0.4127 -0.3071 -0.0942 0.9765 ...
+> 
+> z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
++                      post.sd = apply(post_z1, 2, sd),
++                      post.q2.5 = apply(post_z1, 2, quantile2.5),
++                      post.q50 = apply(post_z1, 2, quantile50),
++                      post.q97.5 = apply(post_z1, 2, quantile97.5))
+> z1_summary
+# A tibble: 500 × 5
+   post.mean post.sd post.q2.5 post.q50 post.q97.5
+       <dbl>   <dbl>     <dbl>    <dbl>      <dbl>
+ 1   -0.274    0.688     -1.79  -0.199       0.886
+ 2    0.279    0.636     -1.26   0.366       1.30 
+ 3   -0.205    0.611     -1.52  -0.165       0.843
+ 4   -0.0554   0.747     -1.92   0.0865      1.06 
+ 5    0.393    0.618     -1.14   0.477       1.42 
+ 6    0.389    0.635     -1.16   0.474       1.46 
+ 7    0.278    0.665     -1.31   0.371       1.35 
+ 8   -0.317    0.590     -1.64  -0.279       0.753
+ 9   -0.0142   0.806     -2.06   0.139       1.15 
+10   -0.338    0.581     -1.62  -0.308       0.741
+# ℹ 490 more rows
+> 
+> save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3.RData"))
+> 
+> ##################################################################
+> ## Independent prediction at each predictions sites
+> ##################################################################
+> ## Stan function exposed to be used 
+> source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
+> exsf <- expose_cmdstanr_functions(model_path = stan_file)
+Warning message:
+In readLines(temp_cpp_file) :
+  incomplete final line found on '/tmp/RtmpaXO1b9/model-35bee4c404f1a.cpp'
+> args(exsf$predict_nnnnglgc_rng)
+NULL
+> 
+> ## Random effect z1 at predicted locations
+> psize <- nrow(prdCoords); psize
+[1] 9500
+> predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
+ num [1:9500, 1:1024] 0.0614 0.0671 0.0727 0.0783 0.0838 ...
+> post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,])); str(post_z1pred)
+ num [1:4000, 1:9500] 0.0757 0.9261 1.6882 1.384 1.5143 ...
+> 
+> z1pred_summary <- tibble(
++   post.mean = apply(post_z1pred, 2, mean),
++   post.sd = apply(post_z1pred, 2, sd),
++   post.q2.5 = apply(post_z1pred, 2, quantile2.5),
++   post.q50 = apply(post_z1pred, 2, quantile50),
++   post.q97.5 = apply(post_z1pred, 2, quantile97.5))
+> z1pred_summary
+# A tibble: 9,500 × 5
+   post.mean post.sd post.q2.5 post.q50 post.q97.5
+       <dbl>   <dbl>     <dbl>    <dbl>      <dbl>
+ 1     1.27    0.554    0.203     1.26        2.39
+ 2     1.26    0.527    0.262     1.26        2.29
+ 3     1.23    0.505    0.274     1.22        2.22
+ 4     1.17    0.484    0.254     1.16        2.14
+ 5     1.10    0.460    0.208     1.09        2.03
+ 6     1.03    0.436    0.176     1.02        1.94
+ 7     0.974   0.417    0.167     0.963       1.83
+ 8     0.919   0.427    0.0847    0.910       1.79
+ 9     0.922   0.462    0.0285    0.918       1.86
+10     0.940   0.507   -0.0330    0.935       1.97
+# ℹ 9,490 more rows
+> 
+> ## Compute the means
+> post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+ num [1:4000, 1:3] 4.19 5.43 5.01 5.01 5.2 ...
+> str(post_z1)
+ num [1:4000, 1:500] -0.4253 -0.4127 -0.3071 -0.0942 0.9765 ...
+> str(obsX)
+ num [1:500, 1:3] 1 1 1 1 1 1 1 1 1 1 ...
+> str(post_theta)
+ num [1:4000, 1:3] 4.19 5.43 5.01 5.01 5.2 ...
+> 
+> obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+ num [1:4000, 1:500] 1.92 3.18 2.82 2.79 2.95 ...
+> prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
+ num [1:4000, 1:9500] 5.14 6.44 5.96 5.95 6.21 ...
+> 
+> size_post_samples <- nrow(draws_df); size_post_samples
+[1] 4000
+> psize <- nrow(prdCoords); psize
+[1] 9500
+> 
+> post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
+ num [1:4000] 0.872 0.87 0.984 1.158 1.206 ...
+> post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
+ num [1:4000] 0.732 1.5 1.221 1.064 1.08 ...
+> post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+ num [1:4000] 0.53 0.521 0.509 0.557 0.508 ...
+> post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
+ num [1:4000] 0.212 0.157 0.19 0.221 0.245 ...
+> post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+ num [1:4000] 0.222 0.391 0.294 0.256 0.282 ...
+> post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+ num [1:4000] 2.192 1.778 1.792 2.194 0.753 ...
+> post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+ num [1:4000, 1:3] 4.19 5.43 5.01 5.01 5.2 ...
+> str(post_z1)
+ num [1:4000, 1:500] -0.4253 -0.4127 -0.3071 -0.0942 0.9765 ...
+> 
+> str(obsX)
+ num [1:500, 1:3] 1 1 1 1 1 1 1 1 1 1 ...
+> str(post_theta)
+ num [1:4000, 1:3] 4.19 5.43 5.01 5.01 5.2 ...
+> 
+> ## NNGP Preparation
+> psize <- nrow(prdCoords); psize
+[1] 9500
+> nei_info_pred <- FNN::get.knnx(obsCoords, prdCoords, k = nNeighbors); str(nei_info_pred)
+List of 2
+ $ nn.index: int [1:9500, 1:5] 12 12 12 38 38 38 38 38 38 38 ...
+ $ nn.dist : num [1:9500, 1:5] 0.0894 0.0825 0.08 0.08 0.06 ...
+> pred2obsNeiID <- nei_info_pred$nn.index; str(pred2obsNeiID)
+ int [1:9500, 1:5] 12 12 12 38 38 38 38 38 38 38 ...
+> pred2obsDist <- nei_info_pred$nn.dist; str(pred2obsDist)
+ num [1:9500, 1:5] 0.0894 0.0825 0.08 0.08 0.06 ...
+> 
+> args(exsf$predict_nnhsglgc_rng)
+function (y, obsX, predX, obsCoords, pred2obsDist, pred2obsNeiID, 
+    beta, z1, z1pred, gamma, sigma2, lscale2, tau, nsize, psize, 
+    postsize, base_rng__ = <pointer: 0x14379200>, pstream__ = <pointer: 0x14587c867de0>) 
+NULL
+> post_ypred <- exsf$predict_nnhsglgc_rng(
++   y = obsY, 
++   obsX = obsX, 
++   predX = prdX, 
++   obsCoords = lapply(1:nrow(obsCoords), function(i) obsCoords[i,]),
++   pred2obsDist = lapply(1:nrow(pred2obsDist), function(i) pred2obsDist[i,]), 
++   pred2obsNeiID = lapply(1:nrow(pred2obsNeiID), function(i) pred2obsNeiID[i,]),
++   beta = lapply(1:nrow(post_theta), function(i) post_theta[i,]), 
++   z1 = lapply(1:nrow(post_z1), function(i) post_z1[i,]), 
++   z1pred = lapply(1:nrow(post_z1pred), function(i) post_z1pred[i,]), 
++   gamma = post_gamma, 
++   sigma2 = post_sigma2, 
++   lscale2 = post_ell2, 
++   tau = post_tau, 
++   nsize = nsize, 
++   psize = psize, 
++   postsize = size_post_samples)
+Starts for prediction location : 400
+Starts for prediction location : 800
+Starts for prediction location : 1200
+Starts for prediction location : 1600
+Starts for prediction location : 2000
+Starts for prediction location : 2400
+Starts for prediction location : 2800
+Starts for prediction location : 3200
+Starts for prediction location : 3600
+Starts for prediction location : 4000
+> 
+> ypred_draws <- do.call(rbind,post_ypred); str(ypred_draws)
+ num [1:4000, 1:9500] 6.96 11.79 14.78 14.92 8.93 ...
+> pred_summary <- tibble(
++   post.mean = apply(ypred_draws, 2, mean),
++   post.sd = apply(ypred_draws, 2, sd),
++   post.q2.5 = apply(ypred_draws, 2, quantile2.5),
++   post.q50 = apply(ypred_draws, 2, quantile50),
++   post.q97.5 = apply(ypred_draws, 2, quantile97.5),
++   y = prdY)
+> pred_summary
+# A tibble: 9,500 × 6
+   post.mean post.sd post.q2.5 post.q50 post.q97.5     y
+       <dbl>   <dbl>     <dbl>    <dbl>      <dbl> <dbl>
+ 1     11.5    2.85       7.43    11.0        18.4 10.0 
+ 2     10.8    2.56       6.98    10.4        17.1  7.98
+ 3     11.6    2.21       8.15    11.2        16.9  8.80
+ 4     10.2    1.83       7.23     9.96       14.3  9.52
+ 5      7.88   1.47       5.36     7.77       11.2  9.22
+ 6      9.43   1.14       7.41     9.36       11.8  9.23
+ 7     10.4    0.865      8.74    10.4        12.1 11.5 
+ 8      9.31   0.860      7.66     9.28       11.0  8.23
+ 9      9.32   1.16       7.18     9.28       11.7  8.35
+10      7.82   1.55       5.19     7.68       11.4  5.74
+# ℹ 9,490 more rows
+> 
+> ## Computation for scoring rules
+> 
+> library(scoringRules)
+> ES <- es_sample(y = prdY, dat = t(ypred_draws)); ES
+[1] 76.48879
+> #VS0.25 <- vs_sample(y = prdY, dat = t(ypred_draws), p = 0.25); VS0.25
+> logs <- mean(logs_sample(y = prdY, dat = t(ypred_draws))); logs
+[1] 1.299233
+> CRPS <- mean(crps_sample(y = prdY, dat = t(ypred_draws))); CRPS
+[1] 0.5478457
+> 
+> scores_df <- pred_summary %>% 
++   mutate(intervals = scoringutils::interval_score(true_values = y, lower = post.q2.5, upper = post.q50, interval_range = 0.95)) %>%
++   mutate(btw = between(y,post.q2.5, post.q97.5)) %>%
++   mutate(error = y - post.q50) %>%
++   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
++             IS = mean(intervals)) %>%
++   mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNHS_DataSet3") %>%
++   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
+> scores_df
+# A tibble: 1 × 9
+  Method          MAE  RMSE   CVG  CRPS    IS    ES  logs `Elapsed Time`
+  <chr>         <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>          <dbl>
+1 NNHS_DataSet3 0.877  1.13 0.949 0.548  1.27  76.5  1.30         86768.
+> 
+> save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3.RData"))
+> 
+> 
+> 

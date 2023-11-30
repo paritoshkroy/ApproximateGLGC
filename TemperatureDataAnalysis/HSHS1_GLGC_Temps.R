@@ -91,7 +91,7 @@ input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoord
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -170,7 +170,7 @@ z_summary <- tibble(post.mean = apply(post_z, 2, mean),
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -248,5 +248,5 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(m1,m2,mstar,elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
+save(m1, m2, mstar, fit_summary, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
 
