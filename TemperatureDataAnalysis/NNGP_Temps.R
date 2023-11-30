@@ -80,7 +80,7 @@ input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, coords = obs
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNGP_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/NNGP_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -115,7 +115,7 @@ library(bayesplot)
 color_scheme_set("brewer-Spectral")
 mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
 
-save(elapsed_time, fixed_summary, draws_df, file = paste0(fpath,"TemperatureDataAnalysis/NNGP_Temps.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, file = paste0(fpath,"TemperatureDataAnalysis/NNGP_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -187,5 +187,5 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNGP_Temps.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNGP_Temps.RData"))
 
