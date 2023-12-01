@@ -68,9 +68,10 @@ ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), from = 0, to = uLimit)
 
-lambda_sigma <- -log(0.01)/1; lambda_sigma
-lambda_tau <- -log(0.01)/1; lambda_tau
+lambda_sigma <- -log(0.01)/0.01; lambda_sigma
+lambda_tau <- -log(0.01)/0.01; lambda_tau
 pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+hist(rexp(n=1000, rate = lambda_sigma))
 
 P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1))
@@ -87,8 +88,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 5000,
-                          iter_sampling = 5000,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.1)
