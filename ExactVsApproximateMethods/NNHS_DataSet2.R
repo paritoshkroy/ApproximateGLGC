@@ -77,7 +77,7 @@ head(lambda)
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(5,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
