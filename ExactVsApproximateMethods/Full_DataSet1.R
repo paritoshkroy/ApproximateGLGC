@@ -131,6 +131,8 @@ load(file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
+library(cmdstanr)
+stan_file <- paste0(fpath,"StanFiles/Full_GLGC_HN.stan")
 source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
 exsf <- expose_cmdstanr_functions(model_path = stan_file)
 args(exsf$predict_fullglgc_rng)
