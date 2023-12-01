@@ -74,7 +74,7 @@ pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
 hist(rexp(n=1000, rate = lambda_sigma))
 
 P <- 3
-mu_theta <- c(mean(obsY),rep(0,P-1))
+mu_theta <- c(mean(log(obsY)),rep(0,P-1))
 V_theta <- diag(c(1,rep(0.05,P-1)))
 
 input <- list(N = nsize, K = nNeighbors, P = P, y = log(obsY), X = obsX, coords = obsCoords, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma = lambda_sigma, lambda_tau = lambda_tau, sigma_multiplier = 0.05, tau_multiplier = 0.05)
