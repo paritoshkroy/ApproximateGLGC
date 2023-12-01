@@ -76,7 +76,7 @@ P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1))
 V_theta <- diag(c(10,rep(1,P-1)))
 
-input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, coords = obsCoords, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma = lambda_sigma, lambda_tau = lambda_tau)
+input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, coords = obsCoords, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma = lambda_sigma, lambda_tau = lambda_tau, sigma_multiplier = 1, tau_multiplier = 1)
 str(input)
 
 library(cmdstanr)

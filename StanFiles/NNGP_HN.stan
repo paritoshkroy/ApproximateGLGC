@@ -143,6 +143,8 @@ data {
   matrix[P, P] V_theta;
   real a;
   real b;
+  real sigma_multiplier;
+  real tau_multiplier;
 }
 
 transformed data {
@@ -152,21 +154,23 @@ transformed data {
 
 parameters{
   vector[P] theta_std;
-  real<lower = 0> sigma;
+  real<lower = 0> sigma_std;
   real<lower = 0> ell;
-  real<lower = 0> tau;
+  real<lower = 0> tau_std;
 }
 
 transformed parameters{
   // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
+  real sigma = sigma_multiplier*sigma_std;
+  real tau = tau_multiplier*tau_std;
 }
 
 model {
   theta_std ~ std_normal();
-  sigma ~ std_normal();
+  sigma_std ~ std_normal();
   ell ~ inv_gamma(a,b);
-  tau ~ std_normal();
+  tau_std ~ std_normal();
   y ~ vecchia_matern32(X * theta, square(sigma), square(tau), ell, site2neiDist, neiDistMat, neiID, N, K);
 }
 
