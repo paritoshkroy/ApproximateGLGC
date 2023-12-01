@@ -43,7 +43,7 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
+nNeighbors <- 5
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -64,8 +64,8 @@ ell_hat <- 0.5
 c <- 1 + 2*ell_hat; c
 c <- pmax(1.2, 4.5*ell_hat); c
 
-m1 <- pmax(22,ceiling(3.42*c/ell_hat)); m1
-m2 <- pmax(22,ceiling(3.42*c/ell_hat)); m2
+m1 <- pmax(32,ceiling(3.42*c/ell_hat)); m1
+m2 <- pmax(32,ceiling(3.42*c/ell_hat)); m2
 mstar <- m1*m2; mstar
 
 L <- c*Lstar; L
