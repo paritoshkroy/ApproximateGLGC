@@ -87,11 +87,11 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 5000,
+                          iter_sampling = 5000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
-                          step_size = 0.25)
+                          step_size = 0.1)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
