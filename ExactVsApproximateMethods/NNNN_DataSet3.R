@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 ######################################################################
 # Generating the data
@@ -43,7 +43,7 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
+nNeighbors <- 5
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -146,7 +146,7 @@ z1_summary <- tibble(z1 = obsZ1,
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet3.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet3.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -220,6 +220,6 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet3.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet3.RData"))
 
 

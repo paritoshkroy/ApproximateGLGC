@@ -143,13 +143,13 @@ data {
   matrix[P, P] V_theta;
   real a;
   real b;
-  real sigma_multiplier;
-  real tau_multiplier;
 }
 
 transformed data {
   cholesky_factor_cov[P] chol_V_theta;
   chol_V_theta = cholesky_decompose(V_theta);
+  real sigma_multiply = sd(y)*0.5;
+  real tau_multiply = sd(y)*0.5;
 }
 
 parameters{
@@ -162,8 +162,8 @@ parameters{
 transformed parameters{
   // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
-  real sigma = sigma_multiplier*sigma_std;
-  real tau = tau_multiplier*tau_std;
+  real sigma = sigma_multiply*sigma_std;
+  real tau = tau_multiply*tau_std;
 }
 
 model {

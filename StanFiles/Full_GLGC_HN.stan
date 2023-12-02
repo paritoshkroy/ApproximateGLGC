@@ -70,15 +70,18 @@ transformed data {
     } else {
       skewness = 1;
     }
+  real sigma1_multiply = sd(y)*0.33;
+  real sigma2_multiply = sd(y)*0.33;
+  real tau_multiply = sd(y)*0.33;
 }
 
 
 parameters{
   vector[P] theta_std;
   real<lower = 0> abs_gamma;
-  real<lower = 0> sigma1;
-  real<lower = 0> sigma2;
-  real<lower = 0> tau;
+  real<lower = 0> sigma1_std;
+  real<lower = 0> sigma2_std;
+  real<lower = 0> tau_std;
   real<lower = 0> ell1;
   real<lower = 0> ell2;
   vector[N] noise1;
@@ -86,6 +89,9 @@ parameters{
 
 transformed parameters {
   real gamma = skewness * abs_gamma;
+  real sigma1 = sigma1_multiply*sigma1_std;
+  real sigma2 = sigma2_multiply*sigma2_std;
+  real tau = tau_multiply*tau_std;
   // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
   }
@@ -98,9 +104,9 @@ model {
 
   theta_std ~ std_normal();
   abs_gamma ~ std_normal();
-  sigma1 ~ std_normal();
-  sigma2 ~ std_normal();
-  tau ~ std_normal();
+  sigma1_std ~ std_normal();
+  sigma2_std ~ std_normal();
+  tau_std ~ std_normal();
   ell1 ~ inv_gamma(a,b);
   ell2 ~ inv_gamma(a,b);
   noise1 ~ std_normal();

@@ -77,7 +77,7 @@ head(lambda)
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(5,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
@@ -159,7 +159,7 @@ z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -259,6 +259,6 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
+save(sampler_diag, fit_summary, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
 
 
