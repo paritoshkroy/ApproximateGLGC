@@ -153,7 +153,7 @@ z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
 
-save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, post_z1, z1_summary, file = paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -254,5 +254,5 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(nNeighbors, fit_summary, m1,m2,mstar,elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps.RData"))
+save(nNeighbors, post_z1, fit_summary, m1,m2,mstar,elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps.RData"))
 

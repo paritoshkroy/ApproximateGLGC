@@ -254,5 +254,6 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
+
 save(nNeighbors, post_z1, fit_summary, m1, m2, mstar, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNHS2_GLGC_Temps.RData"))
 
