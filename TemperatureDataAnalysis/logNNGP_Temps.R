@@ -118,6 +118,41 @@ mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(siz
 save(elapsed_time, fit_summary, fixed_summary, draws_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP_Temps.RData"))
 
 ##################################################################
+## Fitted value at each oberved sites
+##################################################################
+## Stan function exposed to be used 
+source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
+exsf <- expose_cmdstanr_functions(model_path = stan_file)
+args(exsf$vecchia_matern32_fitted_rng)
+
+
+## Compute the means
+size_post_samples <- nrow(draws_df); size_post_samples
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+str(obsX)
+str(post_theta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+post_sigma <- as_tibble(draws_df) %>% .$sigma; str(post_sigma)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+post_ell <- as_tibble(draws_df) %>% .$ell; str(post_ell)
+
+args(exsf$vecchia_matern32_fitted_rng)
+l <- 1
+logyfitted_list <- lapply(1:size_post_samples, function(l) exsf$vecchia_matern32_fitted_rng(y = log(obsY), mu = obsXtheta[l,], sigmasq = post_sigma[l]^2, tausq = post_tau[l]^2, lscale = post_ell[l], site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, neiID = lapply(1:nrow(neiMatInfo$NN_ind), function(i) neiMatInfo$NN_ind[i,]), N = nsize, K = nNeighbors))
+yfitted_list <- lapply(logyfitted_list, exp)
+yfitted_draws <- do.call(rbind,yfitted_list)
+str(yfitted_draws)
+
+yfitted_summary <- tibble(
+  post.mean = apply(yfitted_draws, 2, mean),
+  post.sd = apply(yfitted_draws, 2, sd),
+  post.q2.5 = apply(yfitted_draws, 2, quantile2.5),
+  post.q50 = apply(yfitted_draws, 2, quantile50),
+  post.q97.5 = apply(yfitted_draws, 2, quantile97.5),
+  y = obsY)
+yfitted_summary
+
+##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
 ## Stan function exposed to be used 
@@ -188,5 +223,5 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fit_summary, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP_Temps.RData"))
+save(elapsed_time, obsCoords, prdCoords, yfitted_summary, fit_summary, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/logNNGP_Temps.RData"))
 
