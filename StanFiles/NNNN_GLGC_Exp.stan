@@ -27,6 +27,57 @@ functions {
     return x;
   }
   
+  // fitted values using nearest neighbor approximimation of data likelihood with matern 3/2 
+    vector vecchia_matern32_fitted_rng(vector y, vector mu, real sigmasq, real tausq,
+                             real lscale, matrix site2neiDist, matrix neiDistMat, 
+                             array[,] int neiID, int N, int K) {
+                               
+          vector[N] yfitted;
+          vector[N] cond_mu; // conditional mean
+          vector[N] V; // conditional variances = sigmasq*V
+          vector[N] resid = y - mu;
+          //vector[N] U = resid;
+          real variance_ratio_plus_1 = tausq*inv(sigmasq) + 1; // variance ratio plus 1
+          V[1] = variance_ratio_plus_1;
+          int dim;
+          int h;
+          yfitted[1] = normal_rng(mu[1], sqrt(sigmasq*V[1]));
+          
+          for (i in 2:N) {
+            dim = (i < (K + 1))? (i - 1) : K;
+            matrix[dim, dim] neiCorMat;
+              matrix[dim, dim] neiCorChol;
+              vector[dim] site2neiCor;
+              vector[dim] v;
+              row_vector[dim] v2;
+
+              if(dim == 1){neiCorMat[1, 1] = variance_ratio_plus_1;}
+              else{
+                  h = 0;
+                  for (j in 1:(dim - 1)){
+                      for (k in (j + 1):dim){
+                          h = h + 1;
+                          neiCorMat[j, k] = (1 + sqrt(3) * neiDistMat[(i - 1), h] * inv(lscale)) * exp(-sqrt(3) * neiDistMat[(i - 1), h] * inv(lscale));
+                          neiCorMat[k, j] = neiCorMat[j, k];
+                      }
+                  }
+                  for(j in 1:dim){
+                      neiCorMat[j, j] = variance_ratio_plus_1;
+                  }
+              }
+
+              neiCorChol = cholesky_decompose(neiCorMat);
+              site2neiCor = to_vector((1 + sqrt(3) * site2neiDist[(i - 1), 1: dim] * inv(lscale)) .* exp(-sqrt(3) * site2neiDist[(i - 1), 1: dim] * inv(lscale)));
+             v = mdivide_left_tri_low(neiCorChol, site2neiCor);
+             V[i] = variance_ratio_plus_1 - dot_self(v); // conditional variances
+             v2 = mdivide_right_tri_low(v', neiCorChol);
+             cond_mu[i] = mu[i] + v2 * resid[neiID[(i - 1), 1:dim]];
+             yfitted[i] = normal_rng(cond_mu[i], sqrt(sigmasq*V[i]));
+          }
+          return yfitted;
+      }
+
+  
   array[] vector predict_nnnnglgc_rng(vector y, matrix obsX, matrix predX, array[] vector obsCoords, array[] vector pred2obsDist, array[,] int pred2obsNeiID, array[] vector beta, array[] vector z1, vector gamma, vector sigma1, vector sigma2, vector lscale1, vector lscale2, vector tau, int nsize, int psize, int postsize){
     array[postsize] vector[psize] out;
     int nprint = postsize %/% 10;
