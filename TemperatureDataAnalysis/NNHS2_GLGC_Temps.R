@@ -156,7 +156,7 @@ z1_summary
 save(elapsed_time, fit_summary, fixed_summary, draws_df, post_z1, z1_summary, file = paste0(fpath,"TemperatureDataAnalysis/NNHS2_GLGC_Temps.RData"))
 
 ##################################################################
-## Fitted value at each oberved sites
+## Fitted value at each observed sites
 ##################################################################
 ## Stan function exposed to be used 
 source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
