@@ -105,3 +105,14 @@ as_tibble(selected.sat.temps[idSampled,]) %>%
         panel.grid = element_blank())
 ggsave(filename = "./TemperatureDataAnalysis/SelectedData/TemperatureResidualsDistribution.png", height = 4, width = 6)
 
+as_tibble(selected.sat.temps[idSampled,]) %>% 
+  mutate(resid = as.numeric(residuals(lm(log(TrueTemp)~scale(Lon, scale = FALSE) + scale(Lat, scale =FALSE))))) %>%
+  ggplot(aes(x = resid)) +
+  geom_histogram(aes(y = after_stat(density)), fill = NA, col = "dimgray", bins = 21) +
+  geom_density() +
+  xlab("Residuals") +
+  ylab("Density") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid = element_blank())
+ggsave(filename = "./TemperatureDataAnalysis/SelectedData/logTemperatureResidualsDistribution.png", height = 4, width = 6)
