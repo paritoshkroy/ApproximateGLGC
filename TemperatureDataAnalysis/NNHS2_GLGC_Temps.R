@@ -66,7 +66,7 @@ quantile(obsDistVec)
 ################################################################################
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
-ell_hat <- 0.04;
+ell_hat <- 0.03;
 ell_hat/Lstar
 c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
 m1 <- pmax(54,round(3.42*c/(ell_hat/Lstar[1]))); m1
@@ -111,9 +111,9 @@ cmdstan_fit <- mod$sample(data = input,
                           parallel_chains = 4,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
-                          adapt_delta = 0.99,
-                          max_treedepth = 15,
-                          step_size = 0.25)
+                          adapt_delta = 0.95,
+                          max_treedepth = 10,
+                          step_size = 0.10)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
