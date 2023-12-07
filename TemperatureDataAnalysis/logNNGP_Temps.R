@@ -56,15 +56,15 @@ obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
-lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
+uLimit <- quantile(obsDistVec, prob = 0.50)/2.75; uLimit
 rm(obsDistMat)
 
 #############################################################################
 # Prior elicitation
 #############################################################################
 library(nleqslv)
-ab <- nleqslv(c(3,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
+ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), from = 0, to = uLimit)
 

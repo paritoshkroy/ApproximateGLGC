@@ -61,8 +61,8 @@ obsMinDist <- min(obsDistVec)
 rm(obsDistMat)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
+uLimit <- quantile(obsDistVec, prob = 0.50)/2.75; uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
