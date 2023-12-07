@@ -111,9 +111,9 @@ cmdstan_fit <- mod$sample(data = input,
                           parallel_chains = 4,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
-                          adapt_delta = 0.95,
-                          max_treedepth = 10,
-                          step_size = 0.10)
+                          adapt_delta = 0.99,
+                          max_treedepth = 15,
+                          step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600

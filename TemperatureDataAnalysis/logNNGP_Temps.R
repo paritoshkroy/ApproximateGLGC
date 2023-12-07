@@ -43,7 +43,7 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 5
+nNeighbors <- 10
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -92,7 +92,7 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
-                          step_size = 0.1)
+                          step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600

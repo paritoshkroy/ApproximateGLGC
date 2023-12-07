@@ -69,8 +69,8 @@ Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
 ell_hat <- 0.03;
 ell_hat/Lstar
 c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
-m1 <- round(3.42*c/(ell_hat/Lstar[1])); m1
-m2 <- round(3.42*c/(ell_hat/Lstar[2])); m2
+m1 <- pmax(54,round(3.42*c/(ell_hat/Lstar[1]))); m1
+m2 <- pmax(54,round(3.42*c/(ell_hat/Lstar[2]))); m2
 mstar <- m1*m2; mstar
 L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -111,9 +111,9 @@ cmdstan_fit <- mod$sample(data = input,
                           parallel_chains = 4,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
-                          adapt_delta = 0.95,
-                          max_treedepth = 10,
-                          step_size = 0.10)
+                          adapt_delta = 0.99,
+                          max_treedepth = 15,
+                          step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
