@@ -48,8 +48,8 @@ obsZ1 <- obsZ1[neiMatInfo$ord]
 obsZ2 <- obsZ2[neiMatInfo$ord]
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
 lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
 uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
 

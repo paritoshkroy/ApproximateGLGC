@@ -64,8 +64,8 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.025); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.975); uLimit
+lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
 lLimit <- min(obsDistVec); lLimit # Practical range should not be lower than min distance
 uLimit <- max(obsDistVec); uLimit # Practical range should not be greater than max distance
 
