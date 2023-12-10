@@ -24,7 +24,7 @@ gamma <- 1.75
 distMat <- fields::rdist(coords)
 
 SigmaX <- 1*0.25^abs(outer(1:2,1:2,'-'))
-set.seed(350) # seed for generating covariates
+set.seed(350) # seed for generating Covariates
 X <- cbind(1,cbind(rnorm(n=nsite),rnorm(n=nsite)) %*% t(chol(SigmaX)))
 muX <- drop(X %*% theta)
 set.seed(NULL)

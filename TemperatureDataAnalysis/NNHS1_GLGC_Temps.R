@@ -44,7 +44,7 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 5
+nNeighbors <- 10
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -58,7 +58,7 @@ obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
 lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)/2.75; uLimit
+uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
 rm(obsDistMat)
 quantile(obsDistVec)
 ################################################################################
@@ -92,7 +92,7 @@ curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
 lambda_tau <- -log(0.01)/1; lambda_tau
-pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+pexp(q = 1, rate = lambda_tau, lower.tail = FALSE) ## P(tau > 1) = 0.01
 lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
 lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
 pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
@@ -106,7 +106,7 @@ input <- list(N = nsize, M = mstar, P = P, K = nNeighbors, y = obsY, X = obsX, n
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_PC.stan")
+stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -138,7 +138,7 @@ draws_df
 
 library(bayesplot)
 color_scheme_set("brewer-Spectral")
-mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
+mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol =  3)) + facet_text(size = 15)
 
 ## Recovery of random effect z1
 size_post_samples <- nrow(draws_df); size_post_samples
@@ -293,5 +293,5 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(nNeighbors, obsCoords, prdCoords, post_z1, yfitted_summary, fit_summary, m1,m2,mstar,elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps.RData"))
+save(nNeighbors, obsCoords, prdCoords, post_z1, yfitted_summary, fit_summary, m1, m2, mstar,elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps.RData"))
 

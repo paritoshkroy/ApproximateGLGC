@@ -62,7 +62,7 @@ rm(obsDistMat)
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)/2.75; uLimit
+uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
 
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
@@ -83,7 +83,7 @@ input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiM
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_HN.stan")
+stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -142,7 +142,7 @@ z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
 
-save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TemperatureDataAnalysis/NNNN_GLGC_Temps.RData"))
+save(elapsed_time, fit_summary, post_z1, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"TemperatureDataAnalysis/NNNN_GLGC_Temps.RData"))
 
 ##################################################################
 ## Fitted value at each observed sites

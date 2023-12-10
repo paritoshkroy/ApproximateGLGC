@@ -47,7 +47,7 @@ obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
 lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)/2.75; uLimit
+uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
 rm(obsDistMat)
 quantile(obsDistVec)
 ################################################################################
@@ -91,7 +91,7 @@ input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoord
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_HN.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()

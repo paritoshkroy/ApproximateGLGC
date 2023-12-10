@@ -89,8 +89,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 500,
+                          iter_sampling = 500,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -146,7 +146,7 @@ z1_summary <- tibble(z1 = obsZ1,
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet1.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, post_z1, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet1.RData"))
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -220,6 +220,6 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet1.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, post_z1, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet1.RData"))
 
 

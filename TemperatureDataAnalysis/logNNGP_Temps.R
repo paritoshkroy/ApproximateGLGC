@@ -43,7 +43,7 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
+nNeighbors <- 15
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -57,7 +57,7 @@ obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
 lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)/2.75; uLimit
+uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
 rm(obsDistMat)
 
 #############################################################################
@@ -81,7 +81,7 @@ input <- list(N = nsize, K = nNeighbors, P = P, y = log(obsY), X = obsX, coords 
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNGP_HN.stan")
+stan_file <- paste0(fpath,"StanFiles/NNGP_Exp.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
