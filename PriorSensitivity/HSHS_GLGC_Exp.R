@@ -39,7 +39,7 @@ rm(obsDistMat)
 ################################################################################
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
-m1 <- 22; m2 <- 22; mstar <- m1*m2
+m1 <- 32; m2 <- 32; mstar <- m1*m2
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
 c <- c(2.25,2.25)
 L <- c*Lstar
@@ -51,19 +51,18 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
-lLimit <- min(obsDistVec)*2; lLimit # Practical range should not be lower than min distance
-uLimit <- max(obsDistVec)/2; uLimit # Practical range should not be greater than max distance
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 ## Exponential and PC prior
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
 lambda_tau <- -log(0.01)/1; lambda_tau
-pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.01
 lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
 lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
-pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
+## P(ell < lLimit) = 0.01
+pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE)
 summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
 
 library(nleqslv)

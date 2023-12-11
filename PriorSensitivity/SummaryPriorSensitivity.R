@@ -17,7 +17,7 @@ fixed_summary_list <- lapply(1:length(fname), function(node){
   load(fname[node])
   fixed_summary <- fixed_summary %>% 
     mutate(Method = scores_df$Method) %>%
-    mutate(`Elapsed Time (in minutes)` = scores_df$`Elapsed Time`/60) %>%
+    mutate(`Elapsed Time (in hours)` = scores_df$`Elapsed Time`/3600) %>%
     select(Method,everything())
   return(fixed_summary)
 })
@@ -25,10 +25,17 @@ fixed_summary_list <- lapply(1:length(fname), function(node){
 
 scores_list <- lapply(1:length(fname), function(node){
   load(fname[node])
+  scores_df <- scores_df %>% 
+    mutate(ess_tail = min(fixed_summary$ess_tail)) %>%
+    mutate(`Elapsed Time` = scores_df$`Elapsed Time`/3600) %>%
+    rename(`Elapsed Time (in hours)` = `Elapsed Time`)
   return(scores_df)
 })
 
 scores_df <- do.call(rbind, scores_list)
+scores_df
+scores_df %>% select(Method, ess_tail)
+
 
 ## 
 fixed_summary <- do.call(rbind, fixed_summary_list)

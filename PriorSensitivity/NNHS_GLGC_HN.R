@@ -64,10 +64,8 @@ str(lambda)
 head(lambda)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
-lLimit <- min(obsDistVec)*2.75; lLimit # Practical range should not be lower than min distance
-uLimit <- max(obsDistVec)/2.75; uLimit # Practical range should not be greater than max distance
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
@@ -248,5 +246,5 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"PriorSensitivity/NNHS_GLGC_HN.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, post_z1, file = paste0(fpath,"PriorSensitivity/NNHS_GLGC_HN.RData"))
 
