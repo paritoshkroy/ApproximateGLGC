@@ -27,6 +27,20 @@ functions {
     return x;
   }
   
+  // recovery of posterior latent vector using composition sampling
+    vector latent_matern32_rng(vector y, vector mu, real sigma, real tau,
+                             real lscale, array[] vector coords, int N) {
+                               
+          vector[N] latent;
+          vector[N] cond_mu; // conditional mean
+          vector[N] resid = y - mu;
+          matrix[N,N] C = gp_matern32_cov(coords, sigma, lscale);
+          matrix[N,N] L = cholesky_decompose(add_diag(inverse_spd(C), rep_vector(inv_square(tau),N))); // Cholesky factor of conditional covariance
+          cond_mu = mdivide_left_tri_upp(L', mdivide_left_tri_low(L,inv_square(tau)*resid));
+          latent = multi_normal_cholesky_rng(cond_mu,L);
+          return latent;
+      }
+
      // fitted values using nearest neighbor approximimation of data likelihood with matern 3/2 
     vector vecchia_matern32_fitted_rng(vector y, vector mu, real sigmasq, real tausq,
                              real lscale, matrix site2neiDist, matrix neiDistMat, 
