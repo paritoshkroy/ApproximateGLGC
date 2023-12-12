@@ -265,8 +265,8 @@ data {
   real b;
   int<lower=0, upper=1> positive_skewness;
   real<lower=0> sigma1_multiplier;
-  real<lower=0> sigma2__multiplier;
-  real<lower=0> tau__multiplier;
+  real<lower=0> sigma2_multiplier;
+  real<lower=0> tau_multiplier;
 }
 
 transformed data {
