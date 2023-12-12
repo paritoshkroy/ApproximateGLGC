@@ -258,6 +258,9 @@ data {
   real a;
   real b;
   int<lower=0, upper=1> positive_skewness;
+  real<lower=0> sigma1_multiplier;
+  real<lower=0> sigma2_multiplier;
+  real<lower=0> tau_multiplier;
 }
 
 
@@ -292,9 +295,9 @@ parameters{
 
 transformed parameters{
   real gamma = skewness * abs_gamma;
-  real sigma1 = sigma1_multiply*sigma1_std;
-  real sigma2 = sigma2_multiply*sigma2_std;
-  real tau = tau_multiply*tau_std;
+  real sigma1 = sigma1_multiplier*sigma1_std;
+  real sigma2 = sigma2_multiplier*sigma2_std;
+  real tau = tau_multiplier*tau_std;
   // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
   vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1;

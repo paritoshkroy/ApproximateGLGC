@@ -248,5 +248,41 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
+##################################################################
+## Empirical kernel density and Confidence Intervals
+##################################################################
+
+# R(K) for a normal
+Rk <- 1 / (2 * sqrt(pi))
+
+# Compute the kde (NR bandwidth)
+kdePm <- density(z_summary$post.mean, from = min(z_summary$post.mean), to = max(z_summary$post.mean), n = nsize, bw = "nrd")
+
+# Selected bandwidth
+hPm <- kdePm$bw
+
+# Estimate the variance
+var_kdePm_hat <- kdePm$y * Rk / (nsize * hPm)
+
+# CI with estimated variance
+alpha <- 0.05
+z_alpha2 <- qnorm(1 - alpha / 2)
+
+lciPm <- kdePm$y - z_alpha2 * sqrt(var_kdePm_hat)
+uciPm <- kdePm$y + z_alpha2 * sqrt(var_kdePm_hat)
+
+# Plot estimate, CIs and expectation
+kde_df <- tibble(x = kdePm$x, d = kdePm$y, lci = lciPm, uci = uciPm) %>% mutate(Key = 2)
+ggplot(data = kde_df) +
+  geom_ribbon(aes(x = x, ymin = lci, ymax = uci), fill = "gray85", alpha = 0.5) +
+  geom_line(aes(x = x, y = d), col = "red", linetype = "dashed", linewidth = 0.5) +
+  xlab("Latent spatial effect") +
+  ylab("Density") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        legend.position = c(0.2,0.8),
+        legend.title = element_blank())
+ggsave("HSHS1_GLGC_Temps_SpatialEffect_Density.png", height = 4, width = 6)
+
 save(m1, m2, mstar, fit_summary, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
 
