@@ -155,6 +155,42 @@ z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mea
 save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet3.RData"))
 
 ##################################################################
+## Fitted value at each observed sites
+##################################################################
+## Stan function exposed to be used 
+args(exsf$vecchia_matern32_fitted_rng)
+
+## Compute the means
+size_post_samples <- nrow(draws_df); size_post_samples
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+str(obsX)
+str(post_theta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+str(post_z1)
+post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+
+args(exsf$vecchia_matern32_fitted_rng)
+l <- 1
+yfitted_list <- lapply(1:size_post_samples, function(l){
+  exsf$vecchia_matern32_fitted_rng(y = obsY, mu = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]), sigmasq = post_sigma2[l]^2, tausq = post_tau[l]^2, lscale = post_ell2[l], site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, neiID = lapply(1:nrow(neiMatInfo$NN_ind), function(i) neiMatInfo$NN_ind[i,]), N = nsize, K = nNeighbors)
+})
+
+yfitted_draws <- do.call(rbind,yfitted_list)
+str(yfitted_draws)
+
+yfitted_summary <- tibble(
+  post.mean = apply(yfitted_draws, 2, mean),
+  post.sd = apply(yfitted_draws, 2, sd),
+  post.q2.5 = apply(yfitted_draws, 2, quantile2.5),
+  post.q50 = apply(yfitted_draws, 2, quantile50),
+  post.q97.5 = apply(yfitted_draws, 2, quantile97.5),
+  y = obsY)
+yfitted_summary
+
+##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
 size_post_samples <- nrow(draws_df); size_post_samples
@@ -227,5 +263,114 @@ scores_df <- pred_summary %>%
 scores_df
 
 save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet3.RData"))
+
+##################################################################
+## Recover latent vector z_2 at each observed sites
+##################################################################
+## Compute the means
+size_post_samples <- nrow(draws_df); size_post_samples
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+str(obsX)
+str(post_theta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+str(post_z1)
+post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+
+args(exsf$latent_matern32_rng)
+post_z2_list <- lapply(1:size_post_samples, function(l){
+  exsf$latent_matern32_rng(y = obsY, mu = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]), sigma = post_sigma2[l], tau = post_tau[l], lscale = post_ell2[l], coords = lapply(1:nrow(obsCoords), function(i) obsCoords[i,]), N = nsize)
+})
+
+str(post_z2_list)
+z2_draw <- do.call(rbind, post_z2_list)
+str(z2_draw)
+z2_summary <- tibble(
+  post.mean = apply(z2_draw, 2, mean),
+  post.sd = apply(z2_draw, 2, sd),
+  post.q2.5 = apply(z2_draw, 2, quantile2.5),
+  post.q50 = apply(z2_draw, 2, quantile50),
+  post.q97.5 = apply(z2_draw, 2, quantile97.5),
+  z2 = obsZ2)
+z2_summary %>% summarise(CVG =  mean(between(x = z2, left = post.q2.5, right = post.q97.5)))
+z2_summary %>% ggplot(aes(x = post.q50, y = z2)) + geom_point()
+
+## Obtain z
+z_draw_list <- lapply(1:size_post_samples, function(l) post_gamma[l]*exp(post_z1[l,]) + z2_draw[l,])
+z_draw <- do.call(rbind, z_draw_list)
+z_summary <- tibble(
+  post.mean = apply(z_draw, 2, mean),
+  post.sd = apply(z_draw, 2, sd),
+  post.q2.5 = apply(z_draw, 2, quantile2.5),
+  post.q50 = apply(z_draw, 2, quantile50),
+  post.q97.5 = apply(z_draw, 2, quantile97.5),
+  z = gamma*exp(obsZ1) + obsZ2)
+z_summary %>% summarise(CVG =  mean(between(x = z, left = post.q2.5, right = post.q97.5)))
+z_summary %>% ggplot(aes(x = post.q50, y = z)) + geom_point()
+
+ggplot(z_summary) + 
+  geom_density(aes(x = post.mean, col = "Posterior mean")) + 
+  geom_density(aes(x = z, col = "True value")) +
+  xlab("Latent spatial effect") +
+  ylab("Density") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        legend.position = c(0.2,0.8),
+        legend.title = element_blank())
+
+ggplot(z_summary, aes(x = 1:nrow(z_summary))) + 
+  geom_point(aes(y = post.mean)) + 
+  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5), linewidth = 0.25) +
+  geom_point(aes(y = z), col = "red") +
+  xlab("Latent spatial effect") +
+  ylab("Density") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+# R(K) for a normal
+Rk <- 1 / (2 * sqrt(pi))
+
+# Compute the kde (NR bandwidth)
+kdeObs <- density(z_summary$z, from = min(z_summary$z), to = max(z_summary$z), n = nsize, bw = "nrd")
+kdePm <- density(z_summary$post.mean, from = min(z_summary$post.mean), to = max(z_summary$post.mean), n = nsize, bw = "nrd")
+
+# Selected bandwidth
+hObs <- kdeObs$bw
+hPm <- kdePm$bw
+
+# Estimate the variance
+var_kdeObs_hat <- kdeObs$y * Rk / (nsize * hObs)
+var_kdePm_hat <- kdePm$y * Rk / (nsize * hPm)
+
+# CI with estimated variance
+alpha <- 0.05
+z_alpha2 <- qnorm(1 - alpha / 2)
+lciObs <- kdeObs$y - z_alpha2 * sqrt(var_kdeObs_hat)
+uciObs <- kdeObs$y + z_alpha2 * sqrt(var_kdeObs_hat)
+
+lciPm <- kdePm$y - z_alpha2 * sqrt(var_kdePm_hat)
+uciPm <- kdePm$y + z_alpha2 * sqrt(var_kdePm_hat)
+
+# Plot estimate, CIs and expectation
+kdeObs_df <- tibble(x = kdeObs$x, d = kdeObs$y, lci = lciObs, uci = uciObs) %>% mutate(Key = 1)
+kdePm_df <- tibble(x = kdePm$x, d = kdePm$y, lci = lciPm, uci = uciPm) %>% mutate(Key = 2)
+kde_df <- rbind(kdeObs_df,kdePm_df)
+kde_df <- kde_df %>% mutate(Key = factor(Key, labels = c("True","Estimated")))
+ggplot(z_summary) +
+  geom_histogram(aes(x = z, y = after_stat(density)), 
+                 bins = 21, fill = NA, col = "dimgray") +
+  geom_ribbon(data = kde_df, aes(x = x, ymin = lci, ymax = uci, fill = Key), alpha = 0.5) +
+  geom_line(data = kde_df, aes(x = x, y = d, col = Key), linewidth = 0.35) +
+  xlab("Latent spatial effect") +
+  ylab("Density") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        legend.position = c(0.8,0.8),
+        legend.title = element_blank())
+ggsave(paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet3_SpatialEffect_Density.png"), height = 4, width = 6)
+
+save(elapsed_time, z_summary, kde_df, fit_summary, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet3.RData"))
 
 

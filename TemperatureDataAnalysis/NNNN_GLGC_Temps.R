@@ -61,18 +61,30 @@ obsMinDist <- min(obsDistVec)
 rm(obsDistMat)
 
 ## Prior elicitation
-lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.99)/2.75; uLimit
-
-lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
-lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
-lambda_tau <- -log(0.01)/1; lambda_tau
-pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
+summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
+
+# Half Normal Scale 
+sigma1_multiplier <- sd(obsY)/3; sigma1_multiplier
+sigma2_multiplier <- sd(obsY)/3; sigma2_multiplier
+tau_multiplier <- sd(obsY)/3; tau_multiplier
+
+## Exponential and PC prior
+lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
+lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
+lambda_tau <- -log(0.01)/1; lambda_tau
+pexp(q = 1, rate = lambda_tau, lower.tail = TRUE) ## P(tau > 1) = 0.05
+lambda_ell1 <- as.numeric(-log(0.01)*lLimit); lambda_ell1
+lambda_ell2 <- as.numeric(-log(0.01)*lLimit); lambda_ell2
+pfrechet(q = lLimit, alpha = 1, sigma = lambda_ell2, lower.tail = TRUE) ## P(ell < lLimit) = 0.05
+summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
+
 
 P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1))

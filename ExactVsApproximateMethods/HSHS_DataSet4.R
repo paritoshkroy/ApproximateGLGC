@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set4.R"))
@@ -67,6 +67,11 @@ ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
 
+# Half Normal Scale 
+sigma1_multiplier <- 1
+sigma2_multiplier <- 1
+tau_multiplier <- 1
+
 ## Exponential and PC prior
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
@@ -82,7 +87,7 @@ head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1, sigma1_multiplier = sigma1_multiplier, sigma2_multiplier = sigma2_multiplier, tau_multiplier = tau_multiplier)
 str(input)
 
 library(cmdstanr)
@@ -93,8 +98,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 300,
+                          iter_sampling = 300,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
                           step_size = 0.25)
@@ -254,4 +259,51 @@ scores_df <- pred_summary %>%
 scores_df
 
 save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet4.RData"))
+
+##################################################################
+## Empirical density and CI
+##################################################################
+# R(K) for a normal
+Rk <- 1 / (2 * sqrt(pi))
+
+# Compute the kde (NR bandwidth)
+kdeObs <- density(z_summary$z, from = min(z_summary$z), to = max(z_summary$z), n = nsize, bw = "nrd")
+kdePm <- density(z_summary$post.mean, from = min(z_summary$post.mean), to = max(z_summary$post.mean), n = nsize, bw = "nrd")
+
+# Selected bandwidth
+hObs <- kdeObs$bw
+hPm <- kdePm$bw
+
+# Estimate the variance
+var_kdeObs_hat <- kdeObs$y * Rk / (nsize * hObs)
+var_kdePm_hat <- kdePm$y * Rk / (nsize * hPm)
+
+# CI with estimated variance
+alpha <- 0.05
+z_alpha2 <- qnorm(1 - alpha / 2)
+lciObs <- kdeObs$y - z_alpha2 * sqrt(var_kdeObs_hat)
+uciObs <- kdeObs$y + z_alpha2 * sqrt(var_kdeObs_hat)
+
+lciPm <- kdePm$y - z_alpha2 * sqrt(var_kdePm_hat)
+uciPm <- kdePm$y + z_alpha2 * sqrt(var_kdePm_hat)
+
+# Plot estimate, CIs and expectation
+kdeObs_df <- tibble(x = kdeObs$x, d = kdeObs$y, lci = lciObs, uci = uciObs) %>% mutate(Key = 1)
+kdePm_df <- tibble(x = kdePm$x, d = kdePm$y, lci = lciPm, uci = uciPm) %>% mutate(Key = 2)
+kde_df <- rbind(kdeObs_df,kdePm_df)
+kde_df <- kde_df %>% mutate(Key = factor(Key, labels = c("True","Estimated")))
+ggplot(z_summary) +
+  geom_histogram(aes(x = z, y = after_stat(density)), 
+                 bins = 21, fill = NA, col = "dimgray") +
+  geom_ribbon(data = kde_df, aes(x = x, ymin = lci, ymax = uci, fill = Key), alpha = 0.5) +
+  geom_line(data = kde_df, aes(x = x, y = d, col = Key), linewidth = 0.35) +
+  xlab("Latent spatial effect") +
+  ylab("Density") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        legend.position = c(0.8,0.8),
+        legend.title = element_blank())
+ggsave(paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet4_SpatialEffect_Density.png"), height = 4, width = 6)
+
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, kde_df, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet4.RData"))
 
