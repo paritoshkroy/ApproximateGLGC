@@ -15,11 +15,11 @@ sigma1 <- 1
 sigma2 <- 1
 sigma1sq <- sigma1^2
 sigma2sq <- sigma2^2
-lscale1 <- 0.35
-lscale2 <- 0.35
+lscale1 <- 0.5
+lscale2 <- 0.5
 tau <- 0.5
-tausq <- tau^2
-gamma <- 1.75
+tausq <- tau^2 
+gamma <- 1.5
 
 distMat <- fields::rdist(coords)
 
@@ -46,4 +46,5 @@ obj_keep <- c("idSampled", "y", "z1", "z2", "X", "theta", "sigma1", "sigma2", "l
 obj_drop <- obj_all[!obj_all %in% c(obj_prev, obj_keep)]
 rm(list = obj_drop)
 gc()
+
 
