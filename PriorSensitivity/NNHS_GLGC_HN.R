@@ -75,9 +75,9 @@ curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
 
 # Half Normal Scale 
-sigma1_multiplier <- 1
-sigma2_multiplier <- 1
-tau_multiplier <- 1
+sigma1_multiplier <- sd(obsY)/3
+sigma2_multiplier <- sd(obsY)/3
+tau_multiplier <- sd(obsY)/3
 
 ## Exponential and PC prior
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
