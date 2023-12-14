@@ -92,7 +92,7 @@ summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
 ## Stan input
 P <- 3
 mu_theta <- c(mean(obsY),rep(0,P-1))
-V_theta <- diag(c(1,rep(1,P-1)))
+V_theta <- diag(c(5,rep(1,P-1)))
 
 # Keep in mind that the data should be ordered following nearest neighbor settings
 input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1, sigma1_multiplier = sigma1_multiplier, sigma2_multiplier = sigma2_multiplier, tau_multiplier = tau_multiplier)
