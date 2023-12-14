@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 source(paste0(fpath,"Rutilities/utility_functions.R"))
 source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set4.R"))
@@ -46,8 +46,8 @@ ell_hat <- 0.5
 c <- 1 + 2*ell_hat; c
 c <- pmax(1.2, 4.5*ell_hat); c
 
-m1 <- pmax(22,ceiling(3.42*c/ell_hat)); m1
-m2 <- pmax(22,ceiling(3.42*c/ell_hat)); m2
+m1 <- pmax(32,ceiling(3.42*c/ell_hat)); m1
+m2 <- pmax(32,ceiling(3.42*c/ell_hat)); m2
 mstar <- m1*m2; mstar
 
 L <- c*Lstar; L
@@ -86,7 +86,7 @@ summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
 head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
-V_theta <- diag(c(10,rep(1,P-1))); V_theta
+V_theta <- diag(c(5,rep(1,P-1))); V_theta
 input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1, sigma1_multiplier = sigma1_multiplier, sigma2_multiplier = sigma2_multiplier, tau_multiplier = tau_multiplier)
 str(input)
 
@@ -102,7 +102,8 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_sampling = 300,
                           adapt_delta = 0.99,
                           max_treedepth = 15,
-                          step_size = 0.25)
+                          step_size = 0.25,
+                          init = 0)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
