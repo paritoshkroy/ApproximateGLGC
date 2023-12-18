@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --array=201-250  # 50 nodes runs this model independently
+#SBATCH --array=201-210  # 50 nodes runs this model independently
 #SBATCH --account=def-aschmidt  # replace this with your own account
 #SBATCH --ntasks=16              # number of processes
 #SBATCH --mem-per-cpu=16000M      # memory; default unit is megabytes
-#SBATCH --time=60:00:00         # time (HH:MM:SS)
+#SBATCH --time=48:00:00         # time (HH:MM:SS)
 #SBATCH --output=/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/ComparingApproximateMethods/%x-%j.out
 
 # Modules
