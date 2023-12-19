@@ -189,6 +189,38 @@ z_summary <- tibble(z = z[idSampled],
 z_summary
 save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
 
+
+##################################################################
+## Fitted value at each observed sites
+##################################################################
+## Compute the means
+size_post_samples <- nrow(draws_df); size_post_samples
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+str(obsX)
+str(post_theta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+str(post_z1)
+str(post_z2)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+
+l <- 1
+yfitted_list <- lapply(1:size_post_samples, function(l){
+  rnorm(n = nsize, mean = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]) + post_z2[l,], sd = post_tau[l])
+})
+
+yfitted_draws <- do.call(rbind,yfitted_list)
+str(yfitted_draws)
+
+yfitted_summary <- tibble(
+  post.mean = apply(yfitted_draws, 2, mean),
+  post.sd = apply(yfitted_draws, 2, sd),
+  post.q2.5 = apply(yfitted_draws, 2, quantile2.5),
+  post.q50 = apply(yfitted_draws, 2, quantile50),
+  post.q97.5 = apply(yfitted_draws, 2, quantile97.5),
+  y = obsY)
+yfitted_summary
+
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
