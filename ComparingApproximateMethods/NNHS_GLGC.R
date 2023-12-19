@@ -175,6 +175,11 @@ save(elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, file = paste0(f
 ##################################################################
 ## Fitted value at each observed sites
 ##################################################################
+## Stan function exposed to be used 
+source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
+exsf <- expose_cmdstanr_functions(model_path = stan_file)
+args(exsf$predict_nnhsglgc_rng)
+
 args(exsf$vecchia_matern32_fitted_rng)
 ## Compute the means
 size_post_samples <- nrow(draws_df); size_post_samples
@@ -209,10 +214,6 @@ yfitted_summary
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
-## Stan function exposed to be used 
-source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
-exsf <- expose_cmdstanr_functions(model_path = stan_file)
-args(exsf$predict_nnhsglgc_rng)
 
 ### Random effect z1 at predicted locations
 psize <- nrow(prdCoords); psize
@@ -303,7 +304,7 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ComparingApproximateMethods/NNHS_GLGC",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, pred_summary, scores_df, file = paste0(fpath,"ComparingApproximateMethods/NNHS_GLGC",node,".RData"))
 
 ##################################################################
 ## Recover latent vector z_2 at each observed sites
