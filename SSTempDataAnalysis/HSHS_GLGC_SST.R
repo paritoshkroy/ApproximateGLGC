@@ -47,7 +47,7 @@ Lstar <- c(max(xRange - xMidRange), max(yRange - yMidRange)); Lstar
 ell_hat <- 0.35; ell_hat
 c <- pmax(1.2, 4.5*(ell_hat/Lstar)); c
 L <- c*Lstar; L
-m <- pmax(22,ceiling(3.42 * c/(ell_hat/Lstar))); m
+m <- pmax(32,ceiling(3.42 * c/(ell_hat/Lstar))); m
 m1 <- m[1]; m1
 m2 <- m[2]; m2
 mstar <- m1*m2; mstar

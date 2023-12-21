@@ -73,6 +73,9 @@ data {
   real<lower=0> a;
   real<lower=0> b;
   int<lower=0, upper=1> positive_skewness;
+  real<lower=0> sigma1_multiplier;
+  real<lower=0> sigma2_multiplier;
+  real<lower=0> tau_multiplier;
 }
 
 transformed data {
@@ -84,9 +87,6 @@ transformed data {
     } else {
       skewness = 1;
     }
-  real sigma1_multiply = sd(y)*0.33;
-  real sigma2_multiply = sd(y)*0.33;
-  real tau_multiply = sd(y)*0.33;
 }
 
 
@@ -103,9 +103,9 @@ parameters{
 
 transformed parameters {
   real gamma = skewness * abs_gamma;
-  real sigma1 = sigma1_multiply*sigma1_std;
-  real sigma2 = sigma2_multiply*sigma2_std;
-  real tau = tau_multiply*tau_std;
+  real sigma1 = sigma1_multiplier*sigma1_std;
+  real sigma2 = sigma2_multiplier*sigma2_std;
+  real tau = tau_multiplier*tau_std;
   // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
   }

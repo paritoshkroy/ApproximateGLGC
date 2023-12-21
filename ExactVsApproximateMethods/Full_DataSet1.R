@@ -58,7 +58,7 @@ summary(rfrechet(n = 1000, alpha = 1, sigma = lambda_ell2))
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1))
 V_theta <- diag(c(10,rep(1,P-1)))
-input <- list(N = nsize, P = P, y = obsY, X = obsX, coords = obsCoords, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0)
+input <- list(N = nsize, P = P, y = obsY, X = obsX, coords = obsCoords, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0, sigma1_multiplier = 1, sigma2_multiplier = 1, tau_multiplier = 1)
 str(input)
 
 library(cmdstanr)
@@ -229,7 +229,7 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, yfitted_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
 
 ##################################################################
 ## Recover latent vector z_2 at each observed sites
@@ -339,5 +339,5 @@ ggplot(z_summary) +
         legend.title = element_blank())
 ggsave(paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1_SpatialEffect_Density.png"), height = 4, width = 6)
 
-save(elapsed_time, z_summary, kde_df, fixed_summary, draws_df, z1_summary, post_z1, file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
+save(elapsed_time, z_summary, yfitted_summary, kde_df, fixed_summary, draws_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
 
