@@ -55,11 +55,13 @@ quantile(obsDistVec)
 ################################################################################
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
-ell_hat <- 0.03;
+ell_hat <- 0.04;
 ell_hat/Lstar
 c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
-m1 <- round(3.42*c/(ell_hat/Lstar[1])); m1
-m2 <- round(3.42*c/(ell_hat/Lstar[2])); m2
+round(3.42*c/(ell_hat/Lstar[1]))
+round(3.42*c/(ell_hat/Lstar[2]))
+m1 <- pmin(47,round(3.42*c/(ell_hat/Lstar[1]))); m1
+m2 <- pmin(47,round(3.42*c/(ell_hat/Lstar[2]))); m2
 mstar <- m1*m2; mstar
 L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -87,21 +89,21 @@ head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 0)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 0, sigma1_multiplier = 0.50, sigma2_multiplier = 0.50, tau_multiplier = 0.25)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
-                          adapt_delta = 0.99,
-                          max_treedepth = 15,
+                          iter_warmup = 1250,
+                          iter_sampling = 1250,
+                          adapt_delta = 0.98,
+                          max_treedepth = 12,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
@@ -171,6 +173,39 @@ z_summary <- tibble(post.mean = apply(post_z, 2, mean),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
 save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
+
+##################################################################
+## Fitted value at each observed sites
+##################################################################
+## Compute the means
+size_post_samples <- nrow(draws_df); size_post_samples
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+str(obsX)
+str(post_theta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+str(post_z1)
+str(post_z2)
+post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+
+l <- 1
+rnorm(n = nsize, mean = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]) +post_z2[l,], sd = post_tau[l])
+
+yfitted_list <- lapply(1:size_post_samples, function(l) {
+  rnorm(n = nsize, mean = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]) +post_z2[l,], sd = post_tau[l])
+})
+
+yfitted_draws <- do.call(rbind,yfitted_list)
+str(yfitted_draws)
+
+yfitted_summary <- tibble(
+  post.mean = apply(yfitted_draws, 2, mean),
+  post.sd = apply(yfitted_draws, 2, sd),
+  post.q2.5 = apply(yfitted_draws, 2, quantile2.5),
+  post.q50 = apply(yfitted_draws, 2, quantile50),
+  post.q97.5 = apply(yfitted_draws, 2, quantile97.5),
+  y = obsY)
+yfitted_summary
 
 ##################################################################
 ## Independent prediction at each predictions sites
@@ -248,6 +283,8 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
+save(m1, m2, mstar, fit_summary, elapsed_time, obsCoords, prdCoords, sampler_diag, yfitted_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
+
 ##################################################################
 ## Empirical kernel density and Confidence Intervals
 ##################################################################
@@ -284,5 +321,5 @@ ggplot(data = kde_df) +
         legend.title = element_blank())
 ggsave("HSHS1_GLGC_Temps_SpatialEffect_Density.png", height = 4, width = 6)
 
-save(m1, m2, mstar, fit_summary, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
+save(m1, m2, mstar, fit_summary, elapsed_time, obsCoords, prdCoords, sampler_diag, yfitted_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, kde_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS1_GLGC_Temps.RData"))
 

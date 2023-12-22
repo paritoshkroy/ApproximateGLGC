@@ -44,7 +44,7 @@ prdX <- cbind(1,prdCoords); str(prdX)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
+nNeighbors <- 5
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -66,11 +66,11 @@ quantile(obsDistVec)
 ################################################################################
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
-ell_hat <- 0.03;
+ell_hat <- 0.04;
 ell_hat/Lstar
 c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
-m1 <- pmax(54,round(3.42*c/(ell_hat/Lstar[1]))); m1
-m2 <- pmax(54,round(3.42*c/(ell_hat/Lstar[2]))); m2
+m1 <- pmin(54,round(3.42*c/(ell_hat/Lstar[1]))); m1
+m2 <- pmin(54,round(3.42*c/(ell_hat/Lstar[2]))); m2
 mstar <- m1*m2; mstar
 L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -102,21 +102,21 @@ head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, K = nNeighbors, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0)
+input <- list(N = nsize, M = mstar, P = P, K = nNeighbors, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0, sigma1_multiplier = 0.50, sigma2_multiplier = 0.50, tau_multiplier = 0.25)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
-                          adapt_delta = 0.99,
-                          max_treedepth = 15,
+                          iter_warmup = 1250,
+                          iter_sampling = 1250,
+                          adapt_delta = 0.98,
+                          max_treedepth = 12,
                           step_size = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
@@ -294,4 +294,100 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
 scores_df
 
 save(nNeighbors, obsCoords, prdCoords, post_z1, yfitted_summary, fit_summary, m1, m2, mstar,elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps.RData"))
+
+##################################################################
+## Recover latent vector z_2 at each observed sites
+##################################################################
+## Compute the means
+size_post_samples <- nrow(draws_df); size_post_samples
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+str(obsX)
+str(post_theta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+str(post_z1)
+post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+
+args(exsf$latent_matern32_rng)
+post_z2_list <- lapply(1:size_post_samples, function(l){
+  exsf$latent_matern32_rng(y = obsY, mu = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]), sigma = post_sigma2[l], tau = post_tau[l], lscale = post_ell2[l], coords = lapply(1:nrow(obsCoords), function(i) obsCoords[i,]), N = nsize)
+})
+
+str(post_z2_list)
+z2_draw <- do.call(rbind, post_z2_list)
+str(z2_draw)
+z2_summary <- tibble(
+  post.mean = apply(z2_draw, 2, mean),
+  post.sd = apply(z2_draw, 2, sd),
+  post.q2.5 = apply(z2_draw, 2, quantile2.5),
+  post.q50 = apply(z2_draw, 2, quantile50),
+  post.q97.5 = apply(z2_draw, 2, quantile97.5))
+
+## Obtain z
+z_draw_list <- lapply(1:size_post_samples, function(l) post_gamma[l]*exp(post_z1[l,]) + z2_draw[l,])
+z_draw <- do.call(rbind, z_draw_list)
+z_summary <- tibble(
+  post.mean = apply(z_draw, 2, mean),
+  post.sd = apply(z_draw, 2, sd),
+  post.q2.5 = apply(z_draw, 2, quantile2.5),
+  post.q50 = apply(z_draw, 2, quantile50),
+  post.q97.5 = apply(z_draw, 2, quantile97.5))
+
+ggplot(z_summary) + 
+  geom_density(aes(x = post.mean, col = "Posterior mean")) + 
+  xlab("Latent spatial effect") +
+  ylab("Density") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        legend.position = c(0.2,0.8),
+        legend.title = element_blank())
+
+ggplot(z_summary, aes(x = 1:nrow(z_summary))) + 
+  geom_point(aes(y = post.mean)) + 
+  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5), linewidth = 0.25) +
+  xlab("Latent spatial effect") +
+  ylab("Density") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+# R(K) for a normal
+Rk <- 1 / (2 * sqrt(pi))
+
+# Compute the kde (NR bandwidth)
+kdePm <- density(z_summary$post.mean, from = min(z_summary$post.mean), to = max(z_summary$post.mean), n = nsize, bw = "nrd")
+
+# Selected bandwidth
+hPm <- kdePm$bw
+
+# Estimate the variance
+var_kdePm_hat <- kdePm$y * Rk / (nsize * hPm)
+
+# CI with estimated variance
+alpha <- 0.05
+z_alpha2 <- qnorm(1 - alpha / 2)
+
+lciPm <- kdePm$y - z_alpha2 * sqrt(var_kdePm_hat)
+uciPm <- kdePm$y + z_alpha2 * sqrt(var_kdePm_hat)
+
+# Plot estimate, CIs and expectation
+kdePm_df <- tibble(x = kdePm$x, d = kdePm$y, lci = lciPm, uci = uciPm) %>% mutate(Key = 2)
+kde_df <- kdePm_df
+kde_df <- kde_df %>% mutate(Key = factor(Key, labels = "Estimated"))
+kde_df
+ggplot(z_summary) +
+  geom_ribbon(data = kde_df, aes(x = x, ymin = lci, ymax = uci, fill = Key), alpha = 0.5) +
+  geom_line(data = kde_df, aes(x = x, y = d, col = Key), 
+            linetype = "dashed", linewidth = 0.5) +
+  xlab("Latent spatial effect") +
+  ylab("Density") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        legend.position = c(0.2,0.8),
+        legend.title = element_blank())
+ggsave(paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps_SpatialEffect_Density.png"), height = 4, width = 6)
+
+save(nNeighbors, obsCoords, prdCoords, yfitted_summary, fit_summary, sampler_diag, m1, m2, mstar, elapsed_time, fixed_summary, draws_df, z_summary, kde_df, z1_summary, z2_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/NNHS1_GLGC_Temps.RData"))
+
 
