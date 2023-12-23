@@ -119,19 +119,35 @@ out_df <- out_df %>%
   mutate(Pars = recode(variable, `theta[1]`=1, `theta[2]` = 2, `theta[3]` = 3, gamma = 4, sigma1 = 5, sigma2 = 6, ell1 = 7, ell2 = 8, tau = 9)) %>%
   mutate(Pars = factor(Pars, labels = c("theta[1]","theta[2]","theta[3]","gamma","sigma[1]","sigma[2]","\u2113[1]","\u2113[2]","tau")))
 
-ggplot(out_df %>% filter(lscale == 0.1), aes(x= Method)) + 
+
+out_df_lscale0.1 <- out_df %>% filter(lscale == 0.1)
+table(out_df_lscale0.1$Method)
+out_df_lscale0.1 <- out_df_lscale0.1 %>% mutate(Method = as.character(Method))
+table(out_df_lscale0.1$Method)
+out_df_lscale0.1 <- out_df_lscale0.1 %>% 
+  mutate(Method = recode(Method, `Exact` = 1, `NNNN5` = 2, `NNNN10` = 3, `NNNN15` = 4, `NN5HS42` = 5, `NN5HS52` = 6, `NN10HS42` = 7, `NN10HS52` = 8, `HSHS42` = 9, `HSHS47` = 10, `HSHS52` = 11))
+table(out_df_lscale0.1$Method)
+out_df_lscale0.1 <- out_df_lscale0.1 %>% mutate(Method1 = factor(Method, labels = c("Exact", "05", "10", "15", "(05)42", "(05)52", "(10)42", "(10)52", "42", "47", "52")))
+table(out_df_lscale0.1$Method)
+out_df_lscale0.1 <- out_df_lscale0.1 %>% mutate(Method2 = factor(Method, labels = c("", "NNNN", "NNNN", "NNNN", "NNHS", "NNHS", "NNHS", "NNHS", "HSHS", "HSHS", "HSHS")))
+
+ggplot(out_df_lscale0.1 , aes(x= paste0(Method1, "&", Method2))) + 
   geom_point(aes(y = mean), shape = 1, size = 1) + 
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = 0.25, linewidth = 0.25) +
   geom_hline(aes(yintercept = true), linetype = "dotted") +
-  facet_wrap(~Pars, scales = "free_y", labeller = label_parsed) + 
+  facet_wrap(~Pars, scales = "free_y", labeller = label_parsed, ncol = 2) + 
+  guides(x = ggh4x::guide_axis_nested(delim = "&", order = 1, inv = 1)) + 
   xlab("") +
   ylab("Posterior mean (95% CI)") +
   theme_bw() +
   theme(strip.background = element_blank(),
         strip.text = element_text(size = 13),
         panel.grid = element_blank(),
-        axis.text.x = element_text(size = 8, angle = 30, vjust = 0.5, hjust=0.5))
-ggsave(filename = "./TuningParameterSensitivity/collected_fixed_summary_lscale0.1.png", height = 5, width = 11)
+        axis.text.x = element_text(size = 8, angle = 0, vjust = 0.5, hjust = 0.5))
+ggsave(filename = "./TuningParameterSensitivity/collected_fixed_summary_lscale0.1.png", height = 9, width = 11)
+
+
+out_df %>% filter(lscale == 0.1) %>% mutate(Value = paste0(round(mean,2),"(",round(sd,2),")")) %>% select(Method, Pars, Value) %>% spread(Pars, Value) %>% xtable::xtable()
 
 
 
@@ -149,3 +165,12 @@ ggplot(out_df %>% filter(lscale == 0.4), aes(x= Method)) +
         axis.text.x = element_text(size = 8, angle = 30, vjust = 0.5, hjust=0.5))
 ggsave(filename = "./TuningParameterSensitivity/collected_fixed_summary_lscale0.4.png", height = 5, width = 11)
 
+
+rm(list = ls())
+load("~/git/ApproximateGLGC/TuningParameterSensitivity/collected_scores.RData")
+rbind(full_scores_df %>% filter(lscale == 0.1) %>% mutate(m = 0, m2 = 0) %>% select(Method, m, m2, MAE, RMSE, CVG, CRPS, IS, ES, logs,  `Elapsed Time`),
+      nnnn_scores_df %>% filter(lscale == 0.1) %>% mutate(m = m, m2 = 0) %>% select(Method, m, m2, MAE, RMSE, CVG, CRPS, IS, ES, logs,  `Elapsed Time`),
+      nnhs_scores_df %>% filter(lscale == 0.1) %>% rename(m2 = m1) %>% select(Method, m, m2, MAE, RMSE, CVG, CRPS, IS, ES, logs,  `Elapsed Time`),
+      hshs_scores_df %>% filter(lscale == 0.1) %>% mutate(m = m1, m2 = m1) %>% select(Method, m, m2, MAE, RMSE, CVG, CRPS, IS, ES, logs,  `Elapsed Time`)) %>%
+  mutate(ET = `Elapsed Time`/3600) %>% select(-`Elapsed Time`) %>%
+  xtable::xtable()

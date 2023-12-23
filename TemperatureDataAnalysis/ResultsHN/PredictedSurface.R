@@ -47,7 +47,9 @@ ggp.mean <- ypost_summary %>% filter(key %in% c(1,2,3)) %>% mutate(key = factor(
         legend.title = element_blank(),
         strip.background = element_blank())
 
-ggp.sd <- ypost_summary %>% filter(key %in% c(4,5,6)) %>% mutate(key = factor(key, labels = c("log GP: Standard Deviation", "GP: Standard Deviation", "GLGC: Standard Deviation"))) %>% 
+ggp.sd <- ypost_summary %>% 
+  filter(key %in% c(4,5,6)) %>% 
+  mutate(key = factor(key, labels = c("log GP: Standard Deviation", "GP: Standard Deviation", "GLGC: Standard Deviation"))) %>% 
   ggplot(aes(x = xcoord, y = ycoord)) + 
   geom_tile(aes(fill = value)) + 
   scale_fill_distiller(palette = "Spectral",  
@@ -59,3 +61,4 @@ ggp.sd <- ypost_summary %>% filter(key %in% c(4,5,6)) %>% mutate(key = factor(ke
         strip.background = element_blank())
 ggp <- gridExtra::grid.arrange(ggp.mean,ggp.sd, nrow = 2)
 ggsave(plot = ggp, filename = "./TemperatureDataAnalysis/ResultsHN/summary_temp_data_analysis_mean_sd_surfaces.png", height = 6, width = 10)
+

@@ -272,9 +272,9 @@ transformed data {
   cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
   real skewness;
   if(positive_skewness==0){
-    skewness = -0.4;
+    skewness = -1;
     } else {
-      skewness = 0.4;
+      skewness = 1;
     }
 }
 
