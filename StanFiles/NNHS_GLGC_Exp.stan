@@ -259,6 +259,7 @@ data {
   real a;
   real b;
   int<lower=0, upper=1> positive_skewness;
+  real<lower=0> gamma_multiplier;
 }
 
 
@@ -289,7 +290,7 @@ parameters{
 }
 
 transformed parameters{
-  real gamma = skewness * abs_gamma;
+  real gamma = skewness * gamma_multiplier * abs_gamma;
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
   vector[M] omega1 = sqrt(spdMatern32(lambda[,1], lambda[,2], square(sigma1), ell1, M)) .* noise1; //bigO(m1*m2)
 }

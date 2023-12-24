@@ -267,6 +267,7 @@ data {
   real<lower=0> sigma1_multiplier;
   real<lower=0> sigma2_multiplier;
   real<lower=0> tau_multiplier;
+  real<lower=0> gamma_multiplier;
 }
 
 transformed data {
@@ -291,7 +292,7 @@ parameters{
 }
 
 transformed parameters{
-  real gamma = skewness * abs_gamma;
+  real gamma = skewness * gamma_multiplier * abs_gamma;
   // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
   real sigma1 = sigma1_multiplier*sigma1_std;

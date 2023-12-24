@@ -62,6 +62,7 @@ data {
   real<lower=0> lambda_ell1;
   real<lower=0> lambda_ell2;
   int<lower=0, upper=1> positive_skewness;
+  real<lower=0> gamma_multiplier;
 }
 
 transformed data {
@@ -88,7 +89,7 @@ parameters{
 }
 
 transformed parameters {
-  real gamma = skewness * abs_gamma;
+  real gamma = skewness * gamma_multiplier * abs_gamma;
   // implies : beta ~ multi_normal_cholesky(mu_beta, chol_V_beta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
   }

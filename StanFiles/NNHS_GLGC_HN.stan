@@ -261,6 +261,7 @@ data {
   real<lower=0> sigma1_multiplier;
   real<lower=0> sigma2_multiplier;
   real<lower=0> tau_multiplier;
+  real<lower=0> gamma_multiplier;
 }
 
 
@@ -270,7 +271,7 @@ transformed data {
     H[,i] = eigenfunction(L, to_vector(lambda[i,]), coords);
   }
   cholesky_factor_cov[P] chol_V_theta = cholesky_decompose(V_theta);
-  real skewness;
+  int skewness;
   if(positive_skewness==0){
     skewness = -1;
     } else {
@@ -291,7 +292,7 @@ parameters{
 }
 
 transformed parameters{
-  real gamma = skewness * abs_gamma;
+  real gamma = skewness * gamma_multiplier * abs_gamma;
   real sigma1 = sigma1_multiplier*sigma1_std;
   real sigma2 = sigma2_multiplier*sigma2_std;
   real tau = tau_multiplier*tau_std;

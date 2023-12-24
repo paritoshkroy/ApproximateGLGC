@@ -77,7 +77,7 @@ head(lambda)
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(5,1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
@@ -101,7 +101,7 @@ mu_theta <- c(mean(obsY),rep(0,P-1))
 V_theta <- diag(c(10,rep(1,P-1)))
 
 # Keep in mind that the data should be ordered following nearest neighbor settings
-input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0)
+input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 0, sigma1_multiplier = 0.50, sigma2_multiplier = 0.50, tau_multiplier = 0.25, gamma_multiplier = 0.40)
 str(input)
 
 library(cmdstanr)
@@ -115,8 +115,9 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 15,
-                          step_size = 0.25)
+                          max_treedepth = 12,
+                          step_size = 0.25,
+                          init = 1)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
@@ -170,6 +171,40 @@ exsf <- expose_cmdstanr_functions(model_path = stan_file)
 
 ## Stan function exposed to be used 
 args(exsf$vecchia_matern32_fitted_rng)
+
+## Compute the means
+size_post_samples <- nrow(draws_df); size_post_samples
+post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+str(obsX)
+str(post_theta)
+obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
+str(post_z1)
+post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
+post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+
+args(exsf$vecchia_matern32_fitted_rng)
+l <- 1
+yfitted_list <- lapply(1:size_post_samples, function(l){
+  exsf$vecchia_matern32_fitted_rng(y = obsY, mu = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]), sigmasq = post_sigma2[l]^2, tausq = post_tau[l]^2, lscale = post_ell2[l], site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, neiID = lapply(1:nrow(neiMatInfo$NN_ind), function(i) neiMatInfo$NN_ind[i,]), N = nsize, K = nNeighbors)
+})
+
+yfitted_draws <- do.call(rbind,yfitted_list)
+str(yfitted_draws)
+
+yfitted_summary <- tibble(
+  post.mean = apply(yfitted_draws, 2, mean),
+  post.sd = apply(yfitted_draws, 2, sd),
+  post.q2.5 = apply(yfitted_draws, 2, quantile2.5),
+  post.q50 = apply(yfitted_draws, 2, quantile50),
+  post.q97.5 = apply(yfitted_draws, 2, quantile97.5),
+  y = obsY)
+yfitted_summary
+
+##################################################################
+## Fitted value at each observed sites
+##################################################################
 
 ## Compute the means
 size_post_samples <- nrow(draws_df); size_post_samples
