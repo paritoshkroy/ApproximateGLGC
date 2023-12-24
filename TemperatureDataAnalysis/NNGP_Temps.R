@@ -80,18 +80,19 @@ input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, coords = obs
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNGP_Exp.stan")
+stan_file <- paste0(fpath,"StanFiles/NNGP_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1250,
-                          iter_sampling = 1250,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.98,
                           max_treedepth = 12,
-                          step_size = 0.25)
+                          step_size = 0.25,
+                          init = 1)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
