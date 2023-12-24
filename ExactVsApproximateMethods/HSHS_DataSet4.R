@@ -67,11 +67,6 @@ ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
 summary(rinvgamma(n = 1000, shape = ab[1], scale = ab[2]))
 
-# Half Normal Scale 
-sigma1_multiplier <- 1
-sigma2_multiplier <- 1
-tau_multiplier <- 1
-
 ## Exponential and PC prior
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
 lambda_sigma2 <- -log(0.01)/1; lambda_sigma2
@@ -87,7 +82,7 @@ head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(5,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1, sigma1_multiplier = sigma1_multiplier, sigma2_multiplier = sigma2_multiplier, tau_multiplier = tau_multiplier)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1, sigma1_multiplier = 0.50, sigma2_multiplier = 0.50, tau_multiplier = 0.25, gamma_multiplier = 0.40)
 str(input)
 
 library(cmdstanr)
@@ -98,12 +93,12 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 300,
-                          iter_sampling = 300,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 15,
+                          max_treedepth = 12,
                           step_size = 0.25,
-                          init = 0)
+                          init = 1)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600

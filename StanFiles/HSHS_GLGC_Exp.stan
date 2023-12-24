@@ -153,7 +153,7 @@ transformed data {
   for(i in 1:M){
     H[,i] = eigenfunction(L, to_vector(lambda[i,]), coords);
   }
-  real skewness;
+  int skewness;
   if(positive_skewness==0){
     skewness = -0.4;
     } else {
