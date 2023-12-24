@@ -283,7 +283,7 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet1.RData"))
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, yfitted_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet1.RData"))
 
 
 ##################################################################
@@ -333,5 +333,5 @@ ggplot(z_summary) +
         legend.title = element_blank())
 ggsave(paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet1_SpatialEffect_Density.png"), height = 4, width = 6)
 
-save(sampler_diag, kde_df, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet1.RData"))
+save(sampler_diag, kde_df, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, post_z, yfitted_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/HSHS_DataSet1.RData"))
 
