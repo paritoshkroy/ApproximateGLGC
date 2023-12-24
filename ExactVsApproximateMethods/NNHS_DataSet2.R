@@ -61,7 +61,6 @@ Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
 quantile(obsDistVec, probs = c(1,2.5,52,50)/100)
 
 ell_hat <- 0.5
-c <- 1 + 2*ell_hat; c
 c <- pmax(1.2, 4.5*ell_hat); c
 
 m1 <- pmax(22,ceiling(3.42*c/ell_hat)); m1
