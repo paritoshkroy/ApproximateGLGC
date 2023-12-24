@@ -9,7 +9,7 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 ######################################################################
 # Generating the data
@@ -296,7 +296,7 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, yfitted_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, yfitted_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3.RData"))
 
 ##################################################################
 ## Recover latent vector z_2 at each observed sites
@@ -404,6 +404,6 @@ ggplot(z_summary) +
   theme(panel.grid = element_blank(),
         legend.position = c(0.2,0.8),
         legend.title = element_blank())
-ggsave(paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2_SpatialEffect_Density.png"), height = 4, width = 6)
+ggsave(paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3_SpatialEffect_Density.png"), height = 4, width = 6)
 
-save(sampler_diag, z_summary, kde_df, elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
+save(sampler_diag, z_summary, kde_df, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, yfitted_summary, pred_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3.RData"))
