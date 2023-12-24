@@ -212,7 +212,7 @@ parameters{
 transformed parameters{
   // implies : theta ~ multi_normal_cholesky(mu_theta, chol_V_theta);
   vector[P] theta = mu_theta + chol_V_theta * theta_std;
-  real sigma = sigma_multiplier;*sigma_std;
+  real sigma = sigma_multiplier*sigma_std;
   real tau = tau_multiplier*tau_std;
 }
 
