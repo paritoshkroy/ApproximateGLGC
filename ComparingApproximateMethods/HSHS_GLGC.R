@@ -346,4 +346,4 @@ ggplot(z_summary) +
         legend.title = element_blank())
 ggsave(paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC_SPDensity",node,".png"), height = 4, width = 6)
 
-save(elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, yfitted_summary, z_summary, kde_df, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, yfitted_summary, z_summary, kde_df, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
