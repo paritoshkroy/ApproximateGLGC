@@ -340,5 +340,5 @@ ggplot(z_summary) +
         legend.title = element_blank())
 ggsave(paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1_SpatialEffect_Density.png"), height = 4, width = 6)
 
-save(elapsed_time, z_summary, yfitted_summary, kde_df, fixed_summary, draws_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
+save(elapsed_time, scores_df, z_summary, yfitted_summary, kde_df, fixed_summary, draws_df, file = paste0(fpath,"ExactVsApproximateMethods/Full_DataSet1.RData"))
 

@@ -59,7 +59,7 @@ quantile(obsDistVec)
 ################################################################################
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
-ell_hat <- 0.03;
+ell_hat <- 0.03
 ell_hat/Lstar
 c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
 round(3.42*c/(ell_hat/Lstar[1]))

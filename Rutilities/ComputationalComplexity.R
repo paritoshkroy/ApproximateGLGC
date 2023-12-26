@@ -51,11 +51,11 @@ setup %>% filter(lscale == 0.50)
 setup %>%
   filter(lscale %in% c(0.05,0.10,0.20,0.30,0.40,0.50)) %>%
   ggplot(aes(x = m, y = HSHS)) + 
-  geom_path(linewidth = 0.7, color = "blue") +
-  geom_path(aes(y = NNHS5), linetype = "dotted", color = "green", linewidth = 0.7) +
-  geom_path(aes(y = NNHS10), linetype = "dotdash", color = "green",  linewidth = 0.7) +
-  geom_path(aes(y = NNHS15), linetype = "dashed", color = "green",  linewidth = 0.7) +
-  geom_path(aes(y = NNHS20), linetype = "longdash", color = "green", linewidth = 0.7) +
+  geom_path(linewidth = 0.7, color = "dimgray") +
+  geom_path(aes(y = NNHS5), linetype = "dotted", color = "blue", linewidth = 0.7) +
+  geom_path(aes(y = NNHS10), linetype = "dotdash", color = "blue",  linewidth = 0.7) +
+  geom_path(aes(y = NNHS15), linetype = "dashed", color = "blue",  linewidth = 0.7) +
+  geom_path(aes(y = NNHS20), linetype = "longdash", color = "blue", linewidth = 0.7) +
   geom_point(size = 1, shape = 20) +
   geom_point(aes(y = NNHS5), size =1, shape = 1) +
   geom_point(aes(y = NNHS10), size =1, shape = 2) +
