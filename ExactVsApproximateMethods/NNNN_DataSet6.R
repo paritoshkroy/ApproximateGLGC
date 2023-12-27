@@ -52,30 +52,6 @@ obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhoo
 obsZ1 <- obsZ1[neiMatInfo$ord]
 obsZ2 <- obsZ2[neiMatInfo$ord]
 
-################################################################################
-# Preparing for Hilbert Space Approximate GP
-################################################################################
-xRangeDat <- c(-1,1)
-yRangeDat <- c(-1,1)
-Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
-quantile(obsDistVec, probs = c(1,2.5,52,50)/100)
-
-ell_hat <- 0.1
-c <- pmax(1.2, 4.5*ell_hat); c
-
-ceiling(3.42*c/ell_hat)
-
-m1 <- pmax(52,ceiling(3.42*c/ell_hat)); m1
-m2 <- pmax(52,ceiling(3.42*c/ell_hat)); m2
-mstar <- m1*m2; mstar
-
-L <- c*Lstar; L
-S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
-str(S)
-lambda <- ((pi*S)/(2*L))^2
-str(lambda)
-head(lambda)
-
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
 uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
@@ -102,11 +78,11 @@ mu_theta <- c(mean(obsY),rep(0,P-1))
 V_theta <- diag(c(10,rep(1,P-1)))
 
 # Keep in mind that the data should be ordered following nearest neighbor settings
-input <- list(N = nsize, M = mstar, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1, sigma1_multiplier = 0.50, sigma2_multiplier = 0.50, tau_multiplier = 0.25, gamma_multiplier = 0.40)
+input <- list(N = nsize, K = nNeighbors, P = P, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, mu_theta = mu_theta, V_theta = V_theta, lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, a = ab[1], b = ab[2], lambda_ell1 = lambda_ell1, lambda_ell2 = lambda_ell2, positive_skewness = 1, sigma1_multiplier = 0.50, sigma2_multiplier = 0.50, tau_multiplier = 0.25, gamma_multiplier = 0.40)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_HN.stan")
+stan_file <- paste0(fpath,"StanFiles/NNNN_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -119,6 +95,7 @@ cmdstan_fit <- mod$sample(data = input,
                           max_treedepth = 12,
                           step_size = 0.25,
                           init = 1)
+
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
@@ -144,32 +121,37 @@ library(bayesplot)
 color_scheme_set("brewer-Spectral")
 mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
 
+## Stan function exposed to be used 
+source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
+exsf <- expose_cmdstanr_functions(model_path = stan_file)
+args(exsf$predict_nnnnglgc_rng)
+
 ## Recovery of random effect z1
 size_post_samples <- nrow(draws_df); size_post_samples
-post_omega1 <- as_tibble(draws_df) %>% select(starts_with("omega1[")) %>% as.matrix() %>% unname(); str(post_omega1)
-eigenfunction_compute <- function(x, L, lambda) { 
-  apply(sqrt(1/L) * sin(sqrt(lambda) %*% diag(x + L)), 1, prod)
+post_noise1 <- as_tibble(draws_df) %>% select(starts_with("noise1[")) %>% as.matrix() %>% unname(); str(post_noise1)
+post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
+post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
+post_z1 <- array(0, dim = c(size_post_samples,nsize)); str(post_z1)
+l <- 1
+for(l in 1:size_post_samples){
+  post_z1[l,] <- exsf$latent_nngp_matern32_stuff(noise = post_noise1[l,], sigmasq = post_sigma1[l]^2, lscale = post_ell1[l], site2neiDist = input$site2neiDist, neiDistMat = input$neiDistMat, neiID = lapply(1:nrow(input$neiID), function(l) input$neiID[l,]), N = input$N, K = input$K)
 }
-obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda)))
-str(obsH)
-post_z1 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega1[l,])); str(post_z1)
+str(post_z1)
 
-z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
+z1_summary <- tibble(z1 = obsZ1,
+                     post.mean = apply(post_z1, 2, mean),
                      post.sd = apply(post_z1, 2, sd),
                      post.q2.5 = apply(post_z1, 2, quantile2.5),
                      post.q50 = apply(post_z1, 2, quantile50),
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
+z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet6.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet6.RData"))
 
 ##################################################################
 ## Fitted value at each observed sites
 ##################################################################
-## Stan function exposed to be used 
-source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
-exsf <- expose_cmdstanr_functions(model_path = stan_file)
-
 ## Stan function exposed to be used 
 args(exsf$vecchia_matern32_fitted_rng)
 
@@ -206,29 +188,6 @@ yfitted_summary
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
-
-## Random effect z1 at predicted locations
-psize <- nrow(prdCoords); psize
-predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
-post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,])); str(post_z1pred)
-
-z1pred_summary <- tibble(
-  post.mean = apply(post_z1pred, 2, mean),
-  post.sd = apply(post_z1pred, 2, sd),
-  post.q2.5 = apply(post_z1pred, 2, quantile2.5),
-  post.q50 = apply(post_z1pred, 2, quantile50),
-  post.q97.5 = apply(post_z1pred, 2, quantile97.5))
-z1pred_summary
-
-## Compute the means
-post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
-str(post_z1)
-str(obsX)
-str(post_theta)
-
-obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
-prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
-
 size_post_samples <- nrow(draws_df); size_post_samples
 psize <- nrow(prdCoords); psize
 
@@ -250,8 +209,7 @@ nei_info_pred <- FNN::get.knnx(obsCoords, prdCoords, k = nNeighbors); str(nei_in
 pred2obsNeiID <- nei_info_pred$nn.index; str(pred2obsNeiID)
 pred2obsDist <- nei_info_pred$nn.dist; str(pred2obsDist)
 
-args(exsf$predict_nnhsglgc_rng)
-post_ypred <- exsf$predict_nnhsglgc_rng(
+post_ypred <- exsf$predict_nnnnglgc_rng(
   y = obsY, 
   obsX = obsX, 
   predX = prdX, 
@@ -260,9 +218,10 @@ post_ypred <- exsf$predict_nnhsglgc_rng(
   pred2obsNeiID = lapply(1:nrow(pred2obsNeiID), function(i) pred2obsNeiID[i,]),
   beta = lapply(1:nrow(post_theta), function(i) post_theta[i,]), 
   z1 = lapply(1:nrow(post_z1), function(i) post_z1[i,]), 
-  z1pred = lapply(1:nrow(post_z1pred), function(i) post_z1pred[i,]), 
   gamma = post_gamma, 
+  sigma1 = post_sigma1, 
   sigma2 = post_sigma2, 
+  lscale1 = post_ell1, 
   lscale2 = post_ell2, 
   tau = post_tau, 
   nsize = nsize, 
@@ -278,6 +237,7 @@ pred_summary <- tibble(
   post.q97.5 = apply(ypred_draws, 2, quantile97.5),
   y = prdY)
 pred_summary
+mean(pred_summary[,"y"]>pred_summary[,"post.q2.5"] & pred_summary[,"y"]<pred_summary[,"post.q97.5"])
 
 ## Computation for scoring rules
 
@@ -293,11 +253,11 @@ scores_df <- pred_summary %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNHS_DataSet6") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "NNNN_DataSet6") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(sampler_diag, elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, yfitted_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet6.RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet6.RData"))
 
 ##################################################################
 ## Recover latent vector z_2 at each observed sites
@@ -397,14 +357,16 @@ ggplot(z_summary) +
   geom_histogram(aes(x = z, y = after_stat(density)), 
                  bins = 21, fill = NA, col = "dimgray") +
   geom_ribbon(data = kde_df, aes(x = x, ymin = lci, ymax = uci, fill = Key), alpha = 0.5) +
-  geom_line(data = kde_df, aes(x = x, y = d, col = Key), 
-            linetype = "dashed", linewidth = 0.5) +
+  geom_line(data = kde_df, aes(x = x, y = d, col = Key), linewidth = 0.35) +
   xlab("Latent spatial effect") +
   ylab("Density") +
   theme_bw() +
   theme(panel.grid = element_blank(),
-        legend.position = c(0.2,0.8),
+        legend.position = c(0.8,0.8),
         legend.title = element_blank())
-ggsave(paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet6_SpatialEffect_Density.png"), height = 4, width = 6)
+ggsave(paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet6_SpatialEffect_Density.png"), height = 4, width = 6)
 
-save(sampler_diag, z_summary, kde_df, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, yfitted_summary, pred_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet6.RData"))
+save(elapsed_time, z_summary, kde_df, yfitted_summary, fit_summary, fixed_summary, draws_df, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet6.RData"))
+
+
+
