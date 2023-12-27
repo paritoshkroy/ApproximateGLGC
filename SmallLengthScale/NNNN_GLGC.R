@@ -22,14 +22,14 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args)==0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
-node <- as.numeric(args[1])-100 ### specify correct node here
+node <- as.numeric(args[1])-150 ### specify correct node here
 cat("The seed used to be ", node, "\n")
 
 ##########################################################################
 # Data generation
 ##########################################################################
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ComparingApproximateMethods/data_generation.R"))
+source(paste0(fpath,"SmallLengthScale/data_generation.R"))
 
 # partition as observed and predicted
 obsCoords <- coords[idSampled,]
@@ -106,7 +106,7 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25,
                           init = 1)
 elapsed_time <- cmdstan_fit$time()
@@ -158,7 +158,7 @@ z1_summary <- tibble(z1 = obsZ1,
 z1_summary
 z1_summary %>% mutate(btw = between(z1, post.q2.5,post.q97.5)) %>% .$btw %>% mean()
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, file = paste0(fpath,"ComparingApproximateMethods/NNNN_GLGC",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, post_z1, file = paste0(fpath,"SmallLengthScale/NNNN_GLGC",node,".RData"))
 
 ##################################################################
 ## Fitted value at each observed sites
@@ -266,7 +266,7 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, yfitted_summary, post_z1, file = paste0(fpath,"ComparingApproximateMethods/NNNN_GLGC",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, pred_summary, scores_df, yfitted_summary, post_z1, file = paste0(fpath,"SmallLengthScale/NNNN_GLGC",node,".RData"))
 
 ##################################################################
 ## Recover latent vector z_2 at each observed sites
@@ -374,6 +374,6 @@ ggplot(z_summary) +
   theme(panel.grid = element_blank(),
         legend.position = c(0.2,0.8),
         legend.title = element_blank())
-ggsave(paste0(fpath,"ComparingApproximateMethods/NNNN_GLGC_SPDensity",node,".png"), height = 4, width = 6)
+ggsave(paste0(fpath,"SmallLengthScale/NNNN_GLGC_SPDensity",node,".png"), height = 4, width = 6)
 
-save(sampler_diag, elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, yfitted_summary, z_summary, kde_df, file = paste0(fpath,"ComparingApproximateMethods/NNNN_GLGC",node,".RData"))
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, yfitted_summary, z_summary, kde_df, file = paste0(fpath,"SmallLengthScale/NNNN_GLGC",node,".RData"))

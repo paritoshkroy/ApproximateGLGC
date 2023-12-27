@@ -29,7 +29,7 @@ cat("The seed used to be ", node, "\n")
 # Data generation
 ##########################################################################
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ComparingApproximateMethods/data_generation.R"))
+source(paste0(fpath,"SmallLengthScale/data_generation.R"))
 
 # partition as observed and predicted
 obsCoords <- coords[idSampled,]
@@ -57,9 +57,9 @@ rm(obsDistMat)
 xRangeDat <- c(-1,1)
 yRangeDat <- c(-1,1)
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat))); Lstar
-c <- 2.25
-m1 <- pmax(32,ceiling(3.42*c/(0.35/Lstar[1]))); m1
-m2 <- pmax(32,ceiling(3.42*c/(0.35/Lstar[2]))); m2
+c <- 1.20
+m1 <- pmax(52,ceiling(3.42*c/(0.10/Lstar[1]))); m1
+m2 <- pmax(52,ceiling(3.42*c/(0.10/Lstar[2]))); m2
 mstar <- m1*m2; mstar
 L <- c*Lstar; L
 str(L)
@@ -71,7 +71,7 @@ head(lambda)
 
 ## Prior elicitation
 lLimit <- quantile(obsDistVec, prob = 0.01); lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50); uLimit
+uLimit <- quantile(obsDistVec, prob = 0.99); uLimit
 
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
@@ -108,7 +108,7 @@ cmdstan_fit <- mod$sample(data = input,
                           iter_warmup = 1000,
                           iter_sampling = 1000,
                           adapt_delta = 0.99,
-                          max_treedepth = 12,
+                          max_treedepth = 15,
                           step_size = 0.25,
                           init = 1)
 elapsed_time <- cmdstan_fit$time()
@@ -183,7 +183,7 @@ z_summary <- tibble(z = z[idSampled],
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"SmallLengthScale/HSHS_GLGC",node,".RData"))
 
 
 ##################################################################
@@ -297,7 +297,7 @@ scores_df <- pred_summary %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
+save(elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"SmallLengthScale/HSHS_GLGC",node,".RData"))
 
 
 ##################################################################
@@ -344,6 +344,6 @@ ggplot(z_summary) +
   theme(panel.grid = element_blank(),
         legend.position = c(0.2,0.8),
         legend.title = element_blank())
-ggsave(paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC_SPDensity",node,".png"), height = 4, width = 6)
+ggsave(paste0(fpath,"SmallLengthScale/HSHS_GLGC_SPDensity",node,".png"), height = 4, width = 6)
 
-save(sampler_diag, elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, yfitted_summary, z_summary, kde_df, file = paste0(fpath,"ComparingApproximateMethods/HSHS_GLGC",node,".RData"))
+save(sampler_diag, elapsed_time, fixed_summary, draws_df, pred_summary, scores_df, yfitted_summary, z_summary, kde_df, file = paste0(fpath,"SmallLengthScale/HSHS_GLGC",node,".RData"))
