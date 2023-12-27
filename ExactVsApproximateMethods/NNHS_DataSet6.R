@@ -9,13 +9,13 @@ library(coda)
 library(nleqslv)
 
 fpath <- "/home/ParitoshKRoy/git/ApproximateGLGC/"
-#fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
+fpath <- "/home/pkroy/projects/def-aschmidt/pkroy/ApproximateGLGC/" #@ARC
 
 ######################################################################
 # Generating the data
 ######################################################################
 source(paste0(fpath,"Rutilities/utility_functions.R"))
-source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set4.R"))
+source(paste0(fpath,"ExactVsApproximateMethods/gen_data_set6.R"))
 
 ######################################################################
 # partition as observed and predicted
@@ -60,11 +60,13 @@ yRangeDat <- c(-1,1)
 Lstar <- c(max(abs(xRangeDat)), max(abs(yRangeDat)))
 quantile(obsDistVec, probs = c(1,2.5,52,50)/100)
 
-ell_hat <- 0.5
+ell_hat <- 0.1
 c <- pmax(1.2, 4.5*ell_hat); c
 
-m1 <- pmax(32,ceiling(3.42*c/ell_hat)); m1
-m2 <- pmax(32,ceiling(3.42*c/ell_hat)); m2
+ceiling(3.42*c/ell_hat)
+
+m1 <- pmax(52,ceiling(3.42*c/ell_hat)); m1
+m2 <- pmax(52,ceiling(3.42*c/ell_hat)); m2
 mstar <- m1*m2; mstar
 
 L <- c*Lstar; L

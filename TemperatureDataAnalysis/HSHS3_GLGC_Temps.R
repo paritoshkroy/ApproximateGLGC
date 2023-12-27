@@ -50,7 +50,7 @@ obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
 hist(obsDistVec)
 lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)/2.75; uLimit
+uLimit <- quantile(obsDistVec, prob = 0.90)/2.75; uLimit
 rm(obsDistMat)
 quantile(obsDistVec)
 
@@ -64,8 +64,8 @@ ell_hat/Lstar
 c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
 round(3.42*c/(ell_hat/Lstar[1]))
 round(3.42*c/(ell_hat/Lstar[2]))
-m1 <- pmax(63,round(3.42*c/(ell_hat/Lstar[1]))); m1
-m2 <- pmax(63,round(3.42*c/(ell_hat/Lstar[2]))); m2
+m1 <- pmax(73,round(3.42*c/(ell_hat/Lstar[1]))); m1
+m2 <- pmax(73,round(3.42*c/(ell_hat/Lstar[2]))); m2
 mstar <- m1*m2; mstar
 L <- c*Lstar; L
 S <- unname(as.matrix(expand.grid(S2 = 1:m1, S1 = 1:m2)[,2:1]))
@@ -104,8 +104,8 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 50,
-                          iter_sampling = 50,
+                          iter_warmup = 1000,
+                          iter_sampling = 1000,
                           adapt_delta = 0.98,
                           max_treedepth = 12,
                           step_size = 0.25,
@@ -177,7 +177,7 @@ z_summary <- tibble(post.mean = apply(post_z, 2, mean),
                     post.q50 = apply(post_z, 2, quantile50),
                     post.q97.5 = apply(post_z, 2, quantile97.5))
 z_summary
-save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSHS2_GLGC_Temps.RData"))
+save(elapsed_time, fit_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, file = paste0(fpath,"TemperatureDataAnalysis/HSHS3_GLGC_Temps.RData"))
 
 ##################################################################
 ## Fitted value at each observed sites
@@ -284,11 +284,11 @@ scores_df <- pred_summary %>% filter(!is.na(y)) %>%
   mutate(error = y - post.q50) %>%
   summarise(MAE = sqrt(mean(abs(error))), RMSE = sqrt(mean(error^2)), CVG = mean(btw),
             IS = mean(intervals)) %>%
-  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSHS2_GLGC") %>%
+  mutate(ES = ES, logs = logs, CRPS = CRPS,  `Elapsed Time` = elapsed_time$total, Method = "HSHS3_GLGC") %>%
   select(Method,MAE,RMSE,CVG,CRPS,IS,ES,logs,`Elapsed Time`)
 scores_df
 
-save(m1, m2, mstar, fit_summary, elapsed_time, obsCoords, prdCoords, sampler_diag, yfitted_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS2_GLGC_Temps.RData"))
+save(m1, m2, mstar, fit_summary, elapsed_time, obsCoords, prdCoords, sampler_diag, yfitted_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS3_GLGC_Temps.RData"))
 
 ##################################################################
 ## Empirical kernel density and Confidence Intervals
@@ -324,8 +324,8 @@ ggplot(data = kde_df) +
   theme(panel.grid = element_blank(),
         legend.position = c(0.2,0.8),
         legend.title = element_blank())
-ggsave("HSHS1_GLGC_Temps_SpatialEffect_Density.png", height = 4, width = 6)
+ggsave("HSHS3_GLGC_Temps_SpatialEffect_Density.png", height = 4, width = 6)
 
-save(m1, m2, mstar, fit_summary, elapsed_time, obsCoords, prdCoords, sampler_diag, yfitted_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, kde_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS2_GLGC_Temps.RData"))
+save(m1, m2, mstar, fit_summary, elapsed_time, obsCoords, prdCoords, sampler_diag, yfitted_summary, fixed_summary, draws_df, z1_summary, z2_summary, z_summary, kde_df, pred_summary, scores_df, file = paste0(fpath,"TemperatureDataAnalysis/HSHS3_GLGC_Temps.RData"))
 
 
