@@ -108,7 +108,7 @@ rbind(fixed_summary_gamma, fixed_summary_minus_gamma) %>%
   mutate(Model = factor(Model, labels = c("NNNN", "NNHS", "HSHS"))) %>%
   mutate(Pars = recode(variable, `theta[1]`=1, `theta[2]` = 2, `theta[3]` = 3, gamma = 4, sigma1 = 5, sigma2 = 6, ell1 = 7, ell2 = 8, tau = 9)) %>%
   mutate(Pars = factor(Pars, labels = c("theta[1]","theta[2]","theta[3]","gamma","sigma[1]","sigma[2]","\u2113[1]","\u2113[2]","tau"))) %>% 
-  ggplot(aes(x = factor(nodeID), group = Model, col = Model)) + 
+  ggplot(aes(x = nodeID, group = Model, col = Model)) + 
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), 
                 position=position_dodge(width=0.5), width = 0.1) +
   geom_hline(aes(yintercept = true), linetype = "dashed", linewidth = 0.25) +
@@ -143,7 +143,7 @@ scores_all_df <- scores_df %>%
 
 scores_all_df <- inner_join(inner_join(scores_all_df, dt_all_converged, by = c("Model","node")), mESS_dt, by = c("Model","node")) %>% select(-node)
 
-scores_df_long <- scores_all_df %>% select(-converged, -node, -nodeID) %>%
+scores_df_long <- scores_all_df %>% select(-converged, -nodeID) %>%
   gather(Key, Value, -Model)
   
   
@@ -152,9 +152,10 @@ scores_df_long <- scores_df_long %>%
   mutate(KeyFactor = factor(KeyRecode, label = c("MAE", "RMSE", "CVG", "CRPS", "IS", "ES", "logs", "Elapsed Time (in hours)", "mESS")))
 
 scores_df_long %>%
+  filter(Key != "ES") %>%
   ggplot(aes(x = Model)) +
   geom_boxplot(aes(y = Value)) +
-  facet_wrap(~KeyFactor, scales = "free_y") +
+  facet_wrap(~KeyFactor, scales = "free_y", nrow = 2) +
   xlab("") +
   ylab("") +
   theme_bw() +
