@@ -406,3 +406,4 @@ ggplot(z_summary) +
 ggsave(paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3_SpatialEffect_Density.png"), height = 4, width = 6)
 
 save(sampler_diag, z_summary, kde_df, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, yfitted_summary, pred_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet3.RData"))
+

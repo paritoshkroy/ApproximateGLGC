@@ -43,7 +43,7 @@ rm(obsDistMat)
 ## NNGP preparation
 ################################################################################
 source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 15
+nNeighbors <- 10
 neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
 str(neiMatInfo)
 obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
@@ -370,3 +370,4 @@ ggplot(z_summary) +
 ggsave(paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet1_SpatialEffect_Density.png"), height = 4, width = 6)
 
 save(elapsed_time, z_summary, kde_df, fit_summary, fixed_summary, draws_df, z1_summary, post_z1, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNNN_DataSet1.RData"))
+

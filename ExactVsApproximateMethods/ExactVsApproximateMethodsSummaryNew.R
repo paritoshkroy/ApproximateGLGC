@@ -741,4 +741,3 @@ z_summary %>%
         strip.text = element_text(size = 11),
         legend.title = element_blank(),
         legend.position = "none")
-ggsave(filename = "ExactVsApproximateMethodsSummary_gamma_0.75_0.20.png", height = 6, width = 11)

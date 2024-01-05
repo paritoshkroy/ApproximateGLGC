@@ -63,8 +63,8 @@ quantile(obsDistVec, probs = c(1,2.5,52,50)/100)
 ell_hat <- 0.5
 c <- pmax(1.2, 4.5*ell_hat); c
 
-m1 <- pmax(32,ceiling(3.42*c/ell_hat)); m1
-m2 <- pmax(32,ceiling(3.42*c/ell_hat)); m2
+m1 <- pmax(22,ceiling(3.42*c/ell_hat)); m1
+m2 <- pmax(22,ceiling(3.42*c/ell_hat)); m2
 mstar <- m1*m2; mstar
 
 L <- c*Lstar; L
@@ -408,3 +408,4 @@ ggplot(z_summary) +
 ggsave(paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2_SpatialEffect_Density.png"), height = 4, width = 6)
 
 save(sampler_diag, z_summary, kde_df, elapsed_time, fixed_summary, draws_df, z1_summary, z2_summary, yfitted_summary, pred_summary, pred_summary, scores_df, file = paste0(fpath,"ExactVsApproximateMethods/NNHS_DataSet2.RData"))
+
