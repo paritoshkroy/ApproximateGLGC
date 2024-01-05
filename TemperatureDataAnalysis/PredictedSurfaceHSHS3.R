@@ -30,7 +30,7 @@ lognngp_pred_dt <- rbind(
   mutate(key = recode(key, `post.mean` = 3, `post.sd` = 7))
 rm(yfitted_summary,pred_summary,obsCoords,prdCoords)
 
-load("NNHS2_GLGC_Temps.RData")
+load("HSHS3_GLGC_Temps.RData")
 nnhs2_pred_dt <- rbind(
   yfitted_summary %>% mutate(xcoord = obsCoords[,1], ycoord = obsCoords[,2]),
   pred_summary %>% mutate(xcoord = prdCoords[,1], ycoord = prdCoords[,2])) %>%
@@ -39,7 +39,7 @@ nnhs2_pred_dt <- rbind(
   mutate(key = recode(key, `post.mean` = 4, `post.sd` = 8))
 rm(yfitted_summary,pred_summary,obsCoords,prdCoords)
 
-load("NNHS2_GLGC_Temps.RData")
+load("HSHS3_GLGC_Temps.RData")
 obs_dt <- rbind(
   yfitted_summary %>% mutate(xcoord = obsCoords[,1], ycoord = obsCoords[,2]),
   pred_summary %>% mutate(xcoord = prdCoords[,1], ycoord = prdCoords[,2])) %>%
@@ -81,6 +81,5 @@ ggp.sd <- ypost_summary %>%
         strip.background = element_blank())
 
 ggp <- gridExtra::grid.arrange(ggp.mean,ggp.sd, nrow = 2)
-ggsave(plot = ggp, filename = "./mean_sd_surfaces_temdata.png", height = 7, width = 11)
-
+ggsave(plot = ggp, filename = "./mean_sd_surfaces_temdataHSHS3.png", height = 7, width = 11)
 

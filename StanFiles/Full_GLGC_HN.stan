@@ -31,7 +31,7 @@ return x;
           matrix[N,N] C = gp_matern32_cov(coords, sigma, lscale);
           matrix[N,N] L = cholesky_decompose(add_diag(inverse_spd(C), rep_vector(inv_square(tau),N))); // Cholesky factor of conditional covariance
           cond_mu = mdivide_left_tri_upp(L', mdivide_left_tri_low(L,inv_square(tau)*resid));
-          latent = multi_normal_cholesky_rng(cond_mu,L);
+          latent = mdivide_left_tri_upp(L', multi_normal_cholesky_rng(cond_mu,identity_matrix(N)));
           return latent;
       }
 

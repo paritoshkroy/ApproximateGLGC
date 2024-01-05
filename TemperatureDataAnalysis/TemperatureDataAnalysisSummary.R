@@ -24,8 +24,8 @@ fixed_summary <- fixed_summary %>%
   mutate(Pars = recode(variable, `theta[1]`=1, `theta[2]` = 2, `theta[3]` = 3, gamma = 4, sigma1 = 5, sigma2 = 6, ell1 = 7, ell2 = 8, tau = 9, sigma = 6, ell = 8)) %>%
   mutate(Pars = factor(Pars, labels = c("theta[1]","theta[2]","theta[3]","gamma","sigma[1]","sigma[2]","\u2113[1]","\u2113[2]","tau")))
 fixed_summary <- fixed_summary %>% 
-  mutate(Method = recode(Model, `NNGP_Temps.RData` = 1, `logNNGP_Temps.RData` = 2, `NNNN_GLGC_Temps.RData` = 3, `NNHS1_GLGC_Temps.RData` = 4, `NNHS2_GLGC_Temps.RData` = 5, `HSHS1_GLGC_Temps.RData` = 6, `HSHS2_GLGC_Temps.RData` = 7)) %>%
-  mutate(Method = factor(Method, labels = c("NNGP","log NNGP", "NNNN", "NNHS1", "NNHS2", "HSHS1", "HSHS2"))) %>%
+  mutate(Method = recode(Model, `NNGP_Temps.RData` = 1, `logNNGP_Temps.RData` = 2, `NNNN_GLGC_Temps.RData` = 3, `NNHS1_GLGC_Temps.RData` = 4, `NNHS2_GLGC_Temps.RData` = 5, `NNHS3_GLGC_Temps.RData` = 6, `HSHS1_GLGC_Temps.RData` = 7, `HSHS2_GLGC_Temps.RData` = 8, `HSHS3_GLGC_Temps.RData` = 9)) %>%
+  mutate(Method = factor(Method, labels = c("NNGP","log NNGP", "NNNN", "NNHS1", "NNHS2", "NNHS3", "HSHS1", "HSHS2", "HSHS3"))) %>%
   select(Method,Pars,Value)
 fixed_summary %>% spread(Pars,Value) %>% xtable::xtable()
 
@@ -42,8 +42,8 @@ scores_list <- lapply(1:length(fname), function(node){
 })
 scores_df <- do.call(rbind, scores_list)
 scores_df <- scores_df %>% 
-  mutate(Method = recode(Method, `NNGP` = 1, `logNNGP` = 2, `NNNN_GLGC` = 3, `NNHS1_GLGC` = 4, `NNHS2_GLGC` = 5, `HSHS1_GLGC` = 6, `HSHS2_GLGC` = 7)) %>%
-  mutate(Method = factor(Method, labels = c("NNGP","log NNGP", "NNNN", "NNHS1", "NNHS2", "HSHS1", "HSHS2")))
+  mutate(Method = recode(Method, `NNGP` = 1, `logNNGP` = 2, `NNNN_GLGC` = 3, `NNHS1_GLGC` = 4, `NNHS2_GLGC` = 5, `NNHS3_GLGC` = 6, `HSHS1_GLGC` = 7, `HSHS2_GLGC` = 8, `HSHS3_GLGC` = 9)) %>%
+  mutate(Method = factor(Method, labels = c("NNGP","log NNGP", "NNNN", "NNHS1", "NNHS2", "NNHS3", "HSHS1", "HSHS2", "HSHS3")))
 scores_df %>% arrange(Method) %>% xtable::xtable()
 
 
