@@ -88,6 +88,7 @@ functions {
       }
 
    // recovery of posterior latent vector using composition sampling
+   // recovery of posterior latent vector using composition sampling
     vector latent_matern32_rng(vector y, vector mu, real sigma, real tau,
                              real lscale, array[] vector coords, int N) {
                                
@@ -97,9 +98,10 @@ functions {
           matrix[N,N] C = gp_matern32_cov(coords, sigma, lscale);
           matrix[N,N] L = cholesky_decompose(add_diag(inverse_spd(C), rep_vector(inv_square(tau),N))); // Cholesky factor of conditional covariance
           cond_mu = mdivide_left_tri_upp(L', mdivide_left_tri_low(L,inv_square(tau)*resid));
-          latent = multi_normal_cholesky_rng(cond_mu,L);
+          latent = mdivide_left_tri_upp(L', multi_normal_cholesky_rng(cond_mu,identity_matrix(N)));
           return latent;
       }
+
     
   array[] vector predict_nnnnglgc_rng(vector y, matrix obsX, matrix predX, array[] vector obsCoords, array[] vector pred2obsDist, array[,] int pred2obsNeiID, array[] vector beta, array[] vector z1, vector gamma, vector sigma1, vector sigma2, vector lscale1, vector lscale2, vector tau, int nsize, int psize, int postsize){
     array[postsize] vector[psize] out;

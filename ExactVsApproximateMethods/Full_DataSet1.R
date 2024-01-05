@@ -263,7 +263,10 @@ z2_summary <- tibble(
   post.q97.5 = apply(z2_draw, 2, quantile97.5),
   z2 = obsZ2)
 z2_summary %>% summarise(CVG =  mean(between(x = z2, left = post.q2.5, right = post.q97.5)))
-z2_summary %>% ggplot(aes(x = post.q50, y = z2)) + geom_point()
+z2_summary %>% mutate(ID = 1:nrow(.)) %>%
+  ggplot(aes(x = ID, y = z2)) + 
+  geom_point() +
+  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5))
 
 ## Obtain z
 z_draw_list <- lapply(1:size_post_samples, function(l) post_gamma[l]*exp(post_z1[l,]) + z2_draw[l,])
@@ -276,7 +279,10 @@ z_summary <- tibble(
   post.q97.5 = apply(z_draw, 2, quantile97.5),
   z = gamma*exp(obsZ1) + obsZ2)
 z_summary %>% summarise(CVG =  mean(between(x = z, left = post.q2.5, right = post.q97.5)))
-z_summary %>% ggplot(aes(x = post.q50, y = z)) + geom_point()
+z_summary %>% mutate(ID = 1:nrow(.)) %>%
+  ggplot(aes(x = ID, y = z)) + 
+  geom_point() +
+  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5))
 
 ggplot(z_summary) + 
   geom_density(aes(x = post.mean, col = "Posterior mean")) + 
