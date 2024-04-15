@@ -566,7 +566,7 @@ library(fields)
 library(lubridate)
 library(scoringRules)
 
-### Fixed Parameters
+### z summary
 fname <- list.files(path = "./Exact", pattern = "*\\.RData", full.names = TRUE)
 exact_z_summary_list <- lapply(1:length(fname), function(node){
   load(fname[node])
@@ -727,17 +727,88 @@ z_summary <- z_summary %>% mutate(MethodFactor = factor(m , label = c("Exact", "
 
 
 z_summary %>% 
+  select(-ID) %>%
   filter(DataSet == 1) %>%
-  filter(ID %in% seq(1,50,1)) %>%
+  group_by(z) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup() %>%
+  filter(ID %in% 1:100) %>%
   ggplot(aes(x = ID)) +
-  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5), alpha = 0.35) +
-  geom_point(aes(y = z)) +
-  facet_wrap(~MethodFactor, ncol = 3, scales = "free_y") +
-  xlab("Latent spatial effect") +
-  ylab("Density") +
+  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5), alpha = 0.30) +
+  geom_point(aes(y = z), size = 0.5, shape =20, col = "blue") +
+  facet_wrap(~MethodFactor, ncol = 3) +
+  xlab("Location") +
+  ylab("Latent skewed spatial component (95% CI)") +
   theme_bw() +
   theme(panel.grid = element_blank(),
         strip.background = element_blank(),
         strip.text = element_text(size = 11),
         legend.title = element_blank(),
         legend.position = "none")
+ggsave(filename = "ExactVsApproximateMethodsLatentCoverage_gamma_0.75_0.20.png", height = 6, width = 11)
+
+
+z_summary %>% 
+  select(-ID) %>%
+  filter(DataSet == 2) %>%
+  group_by(z) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup() %>%
+  filter(ID %in% 1:100) %>%
+  ggplot(aes(x = ID)) +
+  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5), alpha = 0.30) +
+  geom_point(aes(y = z), size = 0.5, shape =20, col = "blue") +
+  facet_wrap(~MethodFactor, ncol = 3) +
+  xlab("Location") +
+  ylab("Latent skewed spatial component (95% CI)") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        legend.title = element_blank(),
+        legend.position = "none")
+ggsave(filename = "ExactVsApproximateMethodsLatentCoverage_gamma_0.75_0.50.png", height = 6, width = 11)
+
+
+z_summary %>% 
+  select(-ID) %>%
+  filter(DataSet == 3) %>%
+  group_by(z) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup() %>%
+  filter(ID %in% 401:500) %>%
+  ggplot(aes(x = ID)) +
+  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5), alpha = 0.30) +
+  geom_point(aes(y = z), size = 0.5, shape =20, col = "blue") +
+  facet_wrap(~MethodFactor, ncol = 3) +
+  xlab("Location") +
+  ylab("Latent skewed spatial component (95% CI)") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        legend.title = element_blank(),
+        legend.position = "none")
+ggsave(filename = "ExactVsApproximateMethodsLatentCoverage_gamma_1.50_0.20.png", height = 6, width = 11)
+
+
+z_summary %>% 
+  select(-ID) %>%
+  filter(DataSet == 4) %>%
+  group_by(z) %>%
+  mutate(ID = cur_group_id()) %>%
+  ungroup() %>%
+  filter(ID %in% 401:500) %>%
+  ggplot(aes(x = ID)) +
+  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5), alpha = 0.30) +
+  geom_point(aes(y = z), size = 0.5, shape =20, col = "blue") +
+  facet_wrap(~MethodFactor, ncol = 3) +
+  xlab("Location") +
+  ylab("Latent skewed spatial component (95% CI)") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 11),
+        legend.title = element_blank(),
+        legend.position = "none")
+ggsave(filename = "ExactVsApproximateMethodsLatentCoverage_gamma_1.50_0.50.png", height = 6, width = 11)
