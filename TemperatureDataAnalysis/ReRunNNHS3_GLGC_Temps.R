@@ -111,12 +111,12 @@ mod$print()
 cmdstan_fit <- mod$sample(data = input, 
                           chains = 4,
                           parallel_chains = 4,
-                          iter_warmup = 1000,
-                          iter_sampling = 1000,
+                          iter_warmup = 750,
+                          iter_sampling = 750,
                           adapt_delta = 0.98,
                           max_treedepth = 12,
                           step_size = 0.25,
-                          init = 1)
+                          init = 0.25)
 elapsed_time <- cmdstan_fit$time()
 elapsed_time
 elapsed_time$total/3600
@@ -135,9 +135,9 @@ fixed_summary %>% print(digits = 3)
 draws_df <- cmdstan_fit$draws(format = "df")
 draws_df
 
-library(bayesplot)
-color_scheme_set("brewer-Spectral")
-mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
+#library(bayesplot)
+#color_scheme_set("brewer-Spectral")
+#mcmc_trace(draws_df,  pars = pars, facet_args = list(ncol = 3)) + facet_text(size = 15)
 
 ## Recovery of random effect z1
 size_post_samples <- nrow(draws_df); size_post_samples
