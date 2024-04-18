@@ -22,8 +22,10 @@ nsite <- nrow(selected.sat.temps); nsite
 ####################################################################################
 apply(selected.sat.temps[,c("Lon","Lat")], 2, range)  # range of the spatial domain
 selected.sat.temps <- selected.sat.temps %>% 
-  mutate(scaledLon = Lon - mean(range(Lon))) %>%
-  mutate(scaledLat = Lat - mean(range(Lat)))
+  #mutate(FACT = max(max(Lon - mean(range(Lon))), max(Lat - mean(range(Lat))))) %>%
+  mutate(FACT = 1) %>%
+  mutate(scaledLon = (Lon - mean(range(Lon)))/FACT) %>%
+  mutate(scaledLat = (Lat - mean(range(Lat)))/FACT)
 apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range)
 
 #####################################################################
@@ -40,33 +42,24 @@ prdCoords <- selected.sat.temps %>% filter(is.na(MaskTemp)) %>% select(scaledLon
 obsX <- cbind(1,obsCoords); str(obsX)
 prdX <- cbind(1,prdCoords); str(prdX)
 
-################################################################################
-## NNGP preparation
-################################################################################
-source(paste0(fpath,"Rutilities/NNMatrix.R"))
-nNeighbors <- 10
-neiMatInfo <- NNMatrix(coords = obsCoords, n.neighbors = nNeighbors, n.omp.threads = 2)
-str(neiMatInfo)
-obsY <- obsY[neiMatInfo$ord] # ordered the data following neighborhood settings
-obsX <- obsX[neiMatInfo$ord,] # ordered the data following neighborhood settings
-obsCoords <- obsCoords[neiMatInfo$ord,] # ordered the data following neighborhood settings
-
 obsDistMat <- fields::rdist(obsCoords)
 str(obsDistMat)
 obsDistVec <- obsDistMat[lower.tri(obsDistMat, diag = FALSE)]
 obsMaxDist <- max(obsDistVec)
 obsMedDist <- median(obsDistVec)
 obsMinDist <- min(obsDistVec)
+hist(obsDistVec)
 lLimit <- quantile(obsDistVec, prob = 0.01)/2.75; lLimit
-uLimit <- quantile(obsDistVec, prob = 0.50)/2.75; uLimit
+uLimit <- quantile(obsDistVec, prob = 0.90)/2.75; uLimit
 rm(obsDistMat)
 quantile(obsDistVec)
+
 ################################################################################
 # Preparing for Hilbert Space Approximate GP
 ################################################################################
 xyRanges <- apply(selected.sat.temps[,c("scaledLon","scaledLat")], 2, range); xyRanges
 Lstar <- as.numeric(apply(xyRanges, 2, max)); Lstar
-ell_hat <- 0.03;
+ell_hat <- 0.03
 ell_hat/Lstar
 c <- pmax(1.20,4.75*(ell_hat/min(Lstar))); c
 round(3.42*c/(ell_hat/Lstar[1]))
@@ -83,12 +76,12 @@ head(lambda)
 #############################################################################
 # Prior elicitation
 #############################################################################
-
 ## Inverse Gamma for length scale
 library(nleqslv)
 ab <- nleqslv(c(5,0.1), getIGamma, lRange = lLimit, uRange = uLimit, prob = 0.98)$x
 ab
 curve(dinvgamma(x, shape = ab[1], scale = ab[2]), 0, uLimit)
+hist(rinvgamma(n = 5000, shape = ab[1], scale = ab[2]))
 
 ## Exponential prior for SD
 lambda_sigma1 <- -log(0.01)/1; lambda_sigma1
@@ -100,11 +93,11 @@ head(obsX)
 P <- 3
 mu_theta <- c(mean(obsY),rep(0, P-1)); mu_theta
 V_theta <- diag(c(10,rep(1,P-1))); V_theta
-input <- list(N = nsize, M = mstar, P = P, K = nNeighbors, y = obsY, X = obsX, neiID = neiMatInfo$NN_ind, site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 0, sigma1_multiplier = 0.50, sigma2_multiplier = 0.50, tau_multiplier = 0.25, gamma_multiplier = 0.50)
+input <- list(N = nsize, M = mstar, P = P, y = obsY, X = obsX, coords = obsCoords, L = L, lambda = lambda, mu_theta = mu_theta, V_theta = V_theta, a = ab[1], b = ab[2], lambda_sigma1 = lambda_sigma1, lambda_sigma2 = lambda_sigma2, lambda_tau = lambda_tau, positive_skewness = 0, sigma1_multiplier = 0.50, sigma2_multiplier = 0.50, tau_multiplier = 0.25, gamma_multiplier = 0.50)
 str(input)
 
 library(cmdstanr)
-stan_file <- paste0(fpath,"StanFiles/NNHS_GLGC_HN.stan")
+stan_file <- paste0(fpath,"StanFiles/HSHS_GLGC_HN.stan")
 mod <- cmdstan_model(stan_file, compile = TRUE)
 mod$check_syntax(pedantic = TRUE)
 mod$print()
@@ -156,17 +149,39 @@ z1_summary <- tibble(post.mean = apply(post_z1, 2, mean),
                      post.q97.5 = apply(post_z1, 2, quantile97.5))
 z1_summary
 
-save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunNNHS3_GLGC_Temps.RData"))
+
+## Recovery of random effect z2
+size_post_samples <- nrow(draws_df); size_post_samples
+post_omega2 <- as_tibble(draws_df) %>% select(starts_with("omega2[")) %>% as.matrix() %>% unname(); str(post_omega2)
+obsH <- t(apply(obsCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda)))
+str(obsH)
+post_z2 <- t(sapply(1:size_post_samples, function(l) obsH %*% post_omega2[l,])); str(post_z2)
+
+z2_summary <- tibble(post.mean = apply(post_z2, 2, mean),
+                     post.sd = apply(post_z2, 2, sd),
+                     post.q2.5 = apply(post_z2, 2, quantile2.5),
+                     post.q50 = apply(post_z2, 2, quantile50),
+                     post.q97.5 = apply(post_z2, 2, quantile97.5))
+z2_summary
+
+## Recovery of z <- gamma*exp(z1) + z2
+size_post_samples <- nrow(draws_df); size_post_samples
+post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+str(post_z1)
+str(post_z2)
+l <- 1
+post_z <- t(sapply(1:size_post_samples, function(l) post_gamma[l]*exp(post_z1[l,]) + post_z2[l,])); str(post_z)
+z_summary <- tibble(post.mean = apply(post_z, 2, mean),
+                    post.sd = apply(post_z, 2, sd),
+                    post.q2.5 = apply(post_z, 2, quantile2.5),
+                    post.q50 = apply(post_z, 2, quantile50),
+                    post.q97.5 = apply(post_z, 2, quantile97.5))
+z_summary
+save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunHSHS3_GLGC_Temps.RData"))
 
 ##################################################################
 ## Fitted value at each observed sites
 ##################################################################
-## Stan function exposed to be used 
-source(paste0(fpath,"Rutilities/expose_cmdstanr_functions.R"))
-exsf <- expose_cmdstanr_functions(model_path = stan_file)
-args(exsf$vecchia_matern32_fitted_rng)
-args(exsf$predict_nnhsglgc_rng)
-
 ## Compute the means
 size_post_samples <- nrow(draws_df); size_post_samples
 post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
@@ -174,14 +189,17 @@ str(obsX)
 str(post_theta)
 obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
 str(post_z1)
-post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
-post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
-post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
+str(post_z2)
 post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
+post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
 
-args(exsf$vecchia_matern32_fitted_rng)
 l <- 1
-yfitted_list <- lapply(1:size_post_samples, function(l) exsf$vecchia_matern32_fitted_rng(y = obsY, mu = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]), sigmasq = post_sigma2[l]^2, tausq = post_tau[l]^2, lscale = post_ell2[l], site2neiDist = neiMatInfo$NN_dist, neiDistMat = neiMatInfo$NN_distM, neiID = lapply(1:nrow(neiMatInfo$NN_ind), function(i) neiMatInfo$NN_ind[i,]), N = nsize, K = nNeighbors))
+rnorm(n = nsize, mean = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]) +post_z2[l,], sd = post_tau[l])
+
+yfitted_list <- lapply(1:size_post_samples, function(l) {
+  rnorm(n = nsize, mean = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]) +post_z2[l,], sd = post_tau[l])
+})
+
 yfitted_draws <- do.call(rbind,yfitted_list)
 str(yfitted_draws)
 
@@ -194,10 +212,11 @@ yfitted_summary <- tibble(
   y = obsY)
 yfitted_summary
 
+save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunHSHS3_GLGC_Temps.RData"))
+
 ##################################################################
 ## Independent prediction at each predictions sites
 ##################################################################
-## Select a square domain 
 selectedID <- which((prdCoords[,1] >=-0.30 & prdCoords[,1]<=0.30) & (prdCoords[,2] >=-0.30 & prdCoords[,2]<=0.20))
 str(selectedID)
 as_tibble(prdCoords) %>%
@@ -213,8 +232,7 @@ prdX <- prdX.full[selectedID,]
 ## Random effect z1 at predicted locations
 psize <- nrow(prdCoords); psize
 predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
-post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,]));
-str(post_z1pred)
+post_z1pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega1[l,])); str(post_z1pred)
 
 z1pred_summary <- tibble(
   post.mean = apply(post_z1pred, 2, mean),
@@ -224,57 +242,42 @@ z1pred_summary <- tibble(
   post.q97.5 = apply(post_z1pred, 2, quantile97.5))
 z1pred_summary
 
+save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunHSHS3_GLGC_Temps.RData"))
+
+### Random effect z2 at predicted locations
+psize <- nrow(prdCoords); psize
+predH <- t(apply(prdCoords, 1, function(x) eigenfunction_compute(x, L = L, lambda = lambda))); str(predH)
+post_z2pred <- t(sapply(1:size_post_samples, function(l) predH %*% post_omega2[l,])); str(post_z2pred)
+
+z2pred_summary <- tibble(
+  post.mean = apply(post_z2pred, 2, mean),
+  post.sd = apply(post_z2pred, 2, sd),
+  post.q2.5 = apply(post_z2pred, 2, quantile2.5),
+  post.q50 = apply(post_z2pred, 2, quantile50),
+  post.q97.5 = apply(post_z2pred, 2, quantile97.5))
+z2pred_summary
+
+save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunHSHS3_GLGC_Temps.RData"))
+
 ## Compute the means
 post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
+str(post_z)
 str(post_z1)
+str(post_z2)
+
 str(obsX)
 str(post_theta)
 
 obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
 prdXtheta <- t(sapply(1:size_post_samples, function(l) prdX %*% post_theta[l,])); str(prdXtheta)
 
-size_post_samples <- nrow(draws_df); size_post_samples
-psize <- nrow(prdCoords); psize
-
-post_sigma1 <- as_tibble(draws_df) %>% .$sigma1; str(post_sigma1)
-post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
 post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
-post_ell1 <- as_tibble(draws_df) %>% .$ell1; str(post_ell1)
-post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
 post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
-post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
-str(post_z1)
+str(post_z1pred)
+str(post_z2pred)
+ypred_draws <- t(sapply(1:size_post_samples, function(l) prdXtheta[l,] + post_gamma[l] * exp(post_z1pred[l,]) + post_z2pred[l,] + rnorm(n = psize, mean = 0, sd = post_tau[l])))
+str(ypred_draws)
 
-str(obsX)
-str(post_theta)
-save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunNNHS3_GLGC_Temps.RData"))
-
-## NNGP Preparation
-psize <- nrow(prdCoords); psize
-nei_info_pred <- FNN::get.knnx(obsCoords, prdCoords, k = nNeighbors); str(nei_info_pred)
-pred2obsNeiID <- nei_info_pred$nn.index; str(pred2obsNeiID)
-pred2obsDist <- nei_info_pred$nn.dist; str(pred2obsDist)
-
-args(exsf$predict_nnhsglgc_rng)
-post_ypred <- exsf$predict_nnhsglgc_rng(
-  y = obsY, 
-  obsX = obsX, 
-  predX = prdX, 
-  obsCoords = lapply(1:nrow(obsCoords), function(i) obsCoords[i,]),
-  pred2obsDist = lapply(1:nrow(pred2obsDist), function(i) pred2obsDist[i,]), 
-  pred2obsNeiID = lapply(1:nrow(pred2obsNeiID), function(i) pred2obsNeiID[i,]),
-  beta = lapply(1:nrow(post_theta), function(i) post_theta[i,]), 
-  z1 = lapply(1:nrow(post_z1), function(i) post_z1[i,]), 
-  z1pred = lapply(1:nrow(post_z1pred), function(i) post_z1pred[i,]), 
-  gamma = post_gamma, 
-  sigma2 = post_sigma2, 
-  lscale2 = post_ell2, 
-  tau = post_tau, 
-  nsize = nsize, 
-  psize = psize, 
-  postsize = size_post_samples)
-
-ypred_draws <- do.call(rbind,post_ypred); str(ypred_draws)
 pred_summary <- tibble(
   post.mean = apply(ypred_draws, 2, mean),
   post.sd = apply(ypred_draws, 2, sd),
@@ -283,63 +286,5 @@ pred_summary <- tibble(
   post.q97.5 = apply(ypred_draws, 2, quantile97.5),
   y = prdY[selectedID])
 pred_summary
-save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunNNHS3_GLGC_Temps.RData"))
+save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunHSHS3_GLGC_Temps.RData"))
 
-##################################################################
-## Recover latent vector z_2 at each observed sites
-##################################################################
-## Compute the means
-size_post_samples <- nrow(draws_df); size_post_samples
-post_theta <- as_tibble(draws_df) %>% select(starts_with("theta[")) %>% as.matrix() %>% unname(); str(post_theta)
-str(obsX)
-str(post_theta)
-obsXtheta <- t(sapply(1:size_post_samples, function(l) obsX %*% post_theta[l,])); str(obsXtheta)
-str(post_z1)
-post_sigma2 <- as_tibble(draws_df) %>% .$sigma2; str(post_sigma2)
-post_tau <- as_tibble(draws_df) %>% .$tau; str(post_tau)
-post_ell2 <- as_tibble(draws_df) %>% .$ell2; str(post_ell2)
-post_gamma <- as_tibble(draws_df) %>% .$gamma; str(post_gamma)
-
-args(exsf$latent_matern32_rng)
-post_z2_list <- lapply(1:size_post_samples, function(l){
-  exsf$latent_matern32_rng(y = obsY, mu = obsXtheta[l,] + post_gamma[l]*exp(post_z1[l,]), sigma = post_sigma2[l], tau = post_tau[l], lscale = post_ell2[l], coords = lapply(1:nrow(obsCoords), function(i) obsCoords[i,]), N = nsize)
-})
-
-str(post_z2_list)
-z2_draw <- do.call(rbind, post_z2_list)
-str(z2_draw)
-z2_summary <- tibble(
-  post.mean = apply(z2_draw, 2, mean),
-  post.sd = apply(z2_draw, 2, sd),
-  post.q2.5 = apply(z2_draw, 2, quantile2.5),
-  post.q50 = apply(z2_draw, 2, quantile50),
-  post.q97.5 = apply(z2_draw, 2, quantile97.5))
-
-## Obtain z
-z_draw_list <- lapply(1:size_post_samples, function(l) post_gamma[l]*exp(post_z1[l,]) + z2_draw[l,])
-z_draw <- do.call(rbind, z_draw_list)
-z_summary <- tibble(
-  post.mean = apply(z_draw, 2, mean),
-  post.sd = apply(z_draw, 2, sd),
-  post.q2.5 = apply(z_draw, 2, quantile2.5),
-  post.q50 = apply(z_draw, 2, quantile50),
-  post.q97.5 = apply(z_draw, 2, quantile97.5))
-
-ggplot(z_summary) + 
-  geom_density(aes(x = post.mean, col = "Posterior mean")) + 
-  xlab("Latent spatial effect") +
-  ylab("Density") +
-  theme_bw() +
-  theme(panel.grid = element_blank(),
-        legend.position = c(0.2,0.8),
-        legend.title = element_blank())
-
-ggplot(z_summary, aes(x = 1:nrow(z_summary))) + 
-  geom_point(aes(y = post.mean)) + 
-  geom_errorbar(aes(ymin = post.q2.5, ymax = post.q97.5), linewidth = 0.25) +
-  xlab("Latent spatial effect") +
-  ylab("Density") +
-  theme_bw() +
-  theme(panel.grid = element_blank())
-
-save.image(file = paste0(fpath,"TemperatureDataAnalysis/ImageReRunNNHS3_GLGC_Temps.RData"))
